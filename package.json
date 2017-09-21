@@ -38,6 +38,7 @@
   },
   "homepage": "https://github.com/developmentseed/macrocosm",
   "dependencies": {
+    "@turf/helpers": "^4.7.3",
     "apidoc": "^0.12.3",
     "boom": "^2.7.0",
     "d3-dsv": "^1.0.7",
