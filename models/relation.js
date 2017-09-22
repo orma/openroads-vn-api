@@ -179,7 +179,7 @@ var Relation = {
       raw = [raw];
     }
 
-    var ids = _.pluck(raw, 'id');
+    var ids = _.map(raw, 'id');
 
     return Promise.all(raw.map(function(entity) {
       var model = Relation.fromEntity(entity, q.meta);
@@ -206,7 +206,7 @@ var Relation = {
       raw = [raw];
     }
 
-    var ids = _.pluck(raw, 'id');
+    var ids = _.map(raw, 'id');
 
     return q.transaction(Relation.tableName).whereIn('id', ids)
     .update({ visible: false, changeset_id: q.meta.id }).returning('id')

@@ -133,10 +133,10 @@ var Node = {
       // any of those ways are visible, aka not deleted yet.
       // Return false if this node is still part of an existing way.
       if (wayNodes) {
-        return knex(Way.tableName).whereIn('id',_.pluck(wayNodes, 'way_id'))
+        return knex(Way.tableName).whereIn('id', _.map(wayNodes, 'way_id'))
         .then(function(ways) {
           var visible = _.chain(ways)
-          .pluck('visible')
+          .map('visible')
           .reduce(function(curr, val) { return curr && val; }, true)
           .value();
           return visible;
@@ -299,7 +299,7 @@ var Node = {
   },
 
   'delete': function(q) {
-    var ids = _.pluck(q.changeset['delete'].node, 'id');
+    var ids = _.map(q.changeset['delete'].node, 'id');
 
     return q.transaction(Node.tableName).whereIn('id', ids)
     .update({ visible: false, changeset_id: q.meta.id }).returning('id')

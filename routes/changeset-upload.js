@@ -1,6 +1,5 @@
 'use strict';
 
-var _ = require('lodash');
 var Boom = require('boom');
 
 var knex = require('../connection.js');
@@ -94,7 +93,7 @@ function _upload(meta, changeset) {
           .update(newMeta)
           .then(function() {
             log.info('New changeset updated', (new Date() - time) / 1000, 'seconds');
-            return {changeset: _.extend({}, newMeta, saved), created: queryData.map};
+            return {changeset: Object.assign({}, newMeta, saved), created: queryData.map};
           });
       })
       .catch(function(err) {

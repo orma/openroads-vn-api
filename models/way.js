@@ -278,7 +278,7 @@ var Way = {
   },
 
   'delete': function(q) {
-    var ids = _.pluck(q.changeset['delete'].way, 'id');
+    var ids = _.map(q.changeset['delete'].way, 'id');
     return q.transaction(Way.tableName).whereIn('id', ids)
     .update({ visible: false, changeset_id: q.meta.id }).returning('id')
     .then(function(invisibleWays) {

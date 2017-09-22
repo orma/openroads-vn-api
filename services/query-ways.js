@@ -42,11 +42,11 @@ module.exports = function queryWays(knex, wayIds) {
     // Now we have all the ways and nodes that we need, so fetch
     // the associated tags.
 
-    var wayIds = _.pluck(result[0], 'id');
+    var wayIds = _.map(result[0], 'id');
     var nodeIds = _(result[1])
-      .pluck('id')
+      .map('id')
       .value();
-    var relationIds = _.pluck(result[2], 'id');
+    var relationIds = _.map(result[2], 'id');
 
     return Promise.all(result.concat([
       select('current_nodes', 'id', nodeIds),
