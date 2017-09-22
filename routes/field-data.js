@@ -18,35 +18,33 @@ function groupGeometriesById(geoms) {
   // this top level grouping allows for the 'group by source' to be applied to each road id's data
   geoms = groupBy(geoms, 'road_id');
   // for each road id group:
-  //   1. take geometries and group them by source
-  //   2. take each source group and generate a feature collection
+  //   1. take geometries and group them by source (aka sourceGroup)
+  //   2. take each source group and generate a feature collection (aka sourceGeometries)
   var groupedGeoms = map(geoms, (roadId ,k) => {
     // group road id geometries by their source
     let sourceGroup = groupBy(roadId, 'source');
     // for each source group, make a feature collection
     sourceGroup = map(sourceGroup, (sourceGeometry, i) => {
-      // transform each sourceGeometry into a feature collection reporesentation of it
+      // transform each sourceGeometry into a feature collection representation of it
       sourceGeometry = map(sourceGeometry, (sourceObj, j) => {
-        // make properties object that includes the sourceObj's
-        // source name as well as the roadId
+        // make properties object that includes the sourceObj's source name as well as the roadId
         let props = {properties: {source: sourceObj.source, vProMMsId: k}};
         // parse geometry string to a json
         let geom = JSON.parse(sourceObj.geometry);
-        // return props and geom as a single object
+        // return props and geom as a single object (mirroring a geojson feature)
         return Object.assign(geom, props);
       });
-      // aftet being passsed through the map function, sourceGeometry is an array of geojson features,
-      // so passing it through turf's feature collection function turns it into a feature collection
+      // after being passsed through the map function, sourceGeometry is an array of geojson features.
+      // by passing it through turf's feature collection function, we turn it into a feature collection
       return fc(sourceGeometry);
     });
-    // finally, take source group, currently an array of sourceGeometry feature collections,
-    // and put it in a object that will use the road id as its key and the feature collections list as its 
-    // property
+    // finally, take sourceGroup, currently an array of sourceGeometry feature collections,
+    // and generate roadObject. roadObject is an obj with a key=roadId, and property=sourceGroup.
     const roadObject = {};
     roadObject[k] = sourceGroup;
-    // return that object.
     return roadObject;
   });
+  // returned groupedGeoms, a list of roadObjects
   return groupedGeoms;
 }
 
@@ -54,10 +52,78 @@ module.exports = [
   {
   /**
    * @api {get} /field/{ids}/geometries Group Road field data by source
-   * @apiGroup Field
+   * @apiGroup Field Data
    * @apiName FieldGeometries
    * @apiDescription Returns list of each road id's field data, grouped by source (either RoadLabPro or RouteShoot)
    * @apiVersion 0.1.0
+   * 
+   * @apiExample {curl} Example Usage:
+   *    curl http://localhost:4000/field/024LC00002,024LC00001/geometries
+   *
+   * @apiSuccessExample {json} Success-Response:
+   *  [
+   *    {
+   *      '024LC00002' : [
+   *        {
+   *          type: "FeatureCollection",
+   *          features: [
+   *            {
+   *              type: 'Line',
+   *              coordinates: [...]
+   *            }
+   *          ],
+   *          properties: {
+   *            source: 'RoadLabPro',
+   *            vProMMs: '024LC00002' 
+   *          }
+   *        },
+   *        {
+   *          type: "FeatureCollection",
+   *          features: [
+   *            {
+   *              type: 'Line',
+   *              coordinates: [...]
+   *            }
+   *          ],
+   *          properties: {
+   *            source: 'RouteShoot',
+   *            vProMMs: '024LC00002'
+   *          }
+   *        }
+   *      ],
+   *    },
+   *    {
+   *      '024LC00001' : [
+   *        {
+   *          type: "FeatureCollection",
+   *          features: [
+   *            {
+   *              type: 'Line',
+   *              coordinates: [...]
+   *            }
+   *          ],
+   *          properties: {
+   *            source: 'RoadLabPro',
+   *            vProMMs: '024LC00001' 
+   *          }
+   *        },
+   *        {
+   *          type: "FeatureCollection",
+   *          features: [
+   *            {
+   *              type: 'Line',
+   *              coordinates: [...]
+   *            }
+   *          ],
+   *          properties: {
+   *            source: 'RouteShoot',
+   *            vProMMs: '024LC00001'
+   *          }
+   *        }
+   *      ]
+   *    }
+   *  ]
+   *  ...
    */
     method: 'GET',
     path: '/field/{ids}/geometries',
