@@ -47,6 +47,27 @@ exports.groupGeometriesById = function (geoms) {
 };
 
 /**
+ * given a list objects with road geometries, id, and source, creates a feature class from the array
+ * @func makeGeomFC
+ * @param {array} geoms list of objects, each of which including a road geometry, its road id, and its source
+ * @return {featureCollection} feature collection for roads.
+ */
+exports.makeGeomsFC = function (geoms) {
+  // make features, a list of geojson features, from the raw geoms arrayprovided
+  let features = map(geoms, (geom, k) => {
+    // first parse the stringified feature geometry generated from the ST_ASGeoJSON() query used as part of the endpoint
+    const geometry = JSON.parse(geom.geometry);
+    // genereate a properties object with the road_id and source provided too from the query
+    const props = {properties:  {road_id: geom.road_id, source: geom.source}};
+    // return a geojson feature including both the geometry and properties
+    return Object.assign(geometry, props);
+  });
+  // return this list of features passed through the turn feature collection function, which returns a feature collection
+  return fc(features);
+};
+
+
+/**
  * given a two arrays, one with road ids in the database, the other of road ids provided by api query
  * returns an array of objects showing which among the ids provided by the api query are in the database
  * @func mapExistingIds

@@ -3,7 +3,8 @@
 var knex = require('../connection.js');
 var Boom = require('boom');
 var groupGeometriesById = require('../services/field-data').groupGeometriesById;
-var mapExistingIds = require('../services/field-data').mapExistingIds; 
+var makeGeomsFC = require('../services/field-data').makeGeomsFC;
+var mapExistingIds = require('../services/field-data').mapExistingIds;
 
 module.exports = [
   {
@@ -87,13 +88,14 @@ module.exports = [
     handler: function (req, res) {
       // get the vpromms id supplied in request parameters
       const ids = req.params.ids.split(',');
+      const grouped = (req.query.grouped == 'true');
       // select roads with
       knex('field_data_geometries')
       .whereIn('road_id', ids)
       .select('type as source', 'road_id', knex.raw(`ST_AsGeoJSON(geom) as geometry`))
       .then(geoms => {
-        let groupedGeometries = groupGeometriesById(geoms);
-        res(groupedGeometries);
+        geoms = grouped ? groupGeometriesById(geoms) : makeGeomsFC(geoms);
+        res(geoms);
       })
       .catch(e => {
         // deal with any errors
@@ -131,3 +133,4 @@ module.exports = [
     }
   }
 ];
+
