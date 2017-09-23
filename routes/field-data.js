@@ -9,14 +9,14 @@ var mapExistingIds = require('../services/field-data').mapExistingIds;
 module.exports = [
   {
   /**
-   * @api {get} /field/{ids}/geometries Group Road field data by source
-   * @apiGroup Field Data
+   * @api {get} /field/{ids}/geometries Field Data by source
+   * @apiGroup Field
    * @apiName FieldGeometries
-   * @apiDescription Returns list of each road id's field data, grouped by source (either RoadLabPro or RouteShoot)
+   * @apiDescription Returns list of each road id's field data, either as a feature collection, or object with data grouped by source (either RoadLabPro or RouteShoot)
    * @apiVersion 0.1.0
    * 
    * @apiExample {curl} Example Usage:
-   *    curl http://localhost:4000/field/024LC00002,024LC00001/geometries
+   *    curl http://localhost:4000/field/024LC00002,024LC00001/geometries?grouped=true
    *
    * @apiSuccessExample {json} Success-Response:
    *  [
@@ -32,7 +32,7 @@ module.exports = [
    *          ],
    *          properties: {
    *            source: 'RoadLabPro',
-   *            vProMMs: '024LC00002' 
+   *            vProMMs: '024LC00002'
    *          }
    *        },
    *        {
@@ -81,7 +81,22 @@ module.exports = [
    *      ]
    *    }
    *  ]
-   *  ...
+   *  
+   * @apiExample {curl} Example Usage:
+   *    curl http://localhost:4000/field/024LC00002,024LC00001/geometries?grouped=false
+   *
+   * @apiSuccessExample {json} Success-Response:
+   *   { type: "FeatureCollection",
+   *     features: [
+   *       { type: "Point",
+   *         coordinates: [ 10.9003, 54.07834 ],
+   *         properties: { road_id: "024LC00001", source: "RoadLabPro" } },
+   *       { type: "Point",
+   *         coordinates: [ 10.8003, 54.09834 ],
+   *         properties: { road_id: "024LC00002", source: "RouteShoot" } }
+   *     ]
+   *   }
+   *
    */
     method: 'GET',
     path: '/field/{ids}/geometries',
@@ -94,6 +109,7 @@ module.exports = [
       .whereIn('road_id', ids)
       .select('type as source', 'road_id', knex.raw(`ST_AsGeoJSON(geom) as geometry`))
       .then(geoms => {
+        // if the query asks for geometries grouped, then provide them as so. if not, just return a feature collection of all records.
         geoms = grouped ? groupGeometriesById(geoms) : makeGeomsFC(geoms);
         res(geoms);
       })
@@ -107,7 +123,7 @@ module.exports = [
   {
    /**
     * @api {get} /field/{ids}/exists Indicate vpromms id uses field data
-    * @apiGroup Field Data
+    * @apiGroup Fiel
     * @apiName Field Exists
     * @apiDescription Returns list of objects for each provided road id, where each object indicates if it has attached field data
     * @apiVersion 0.1.0
