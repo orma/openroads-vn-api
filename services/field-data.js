@@ -45,11 +45,11 @@ exports.groupGeometriesById = function (geoms) {
   // returned groupedGeoms, a list of roadObjects
   return groupedGeoms;
 };
-  
+
 /**
  * given a two arrays, one with road ids in the database, the other of road ids provided by api query
  * returns an array of objects showing which among the ids provided by the api query are in the database
- * @func mapExistingIds 
+ * @func mapExistingIds
  * @param {array} existingIds list of ids existing in the database
  * @param {array} ids list of ids provided by an api query
  * @return {array} array of objects where each object key is a road id, and each property is a boolean (true if in the db, false if not)
@@ -58,10 +58,8 @@ exports.mapExistingIds = function (existingIds, ids) {
   // transform list of ids into objects denoting if they exist in the database
   return ids.map(id => {
     // isAnExistingId searches for `id` in the `existingids` list, then casts the search to a boolean. (true if found, false if not)
-    const isAnExistingId = Boolean(existingIds.find(existingId => existingId === id));
-    // returnObject is the object, with k=r
-    const returnObject = {};
-    returnObject[id] = isAnExistingId;
-    return returnObject;
+    const isAnExistingId = Boolean(existingIds.find(existingId => existingId.road_id === id));
+    // return an object with the id and a property telling if field data exists;
+    return {id: id, fieldData: isAnExistingId};
   });
 };
