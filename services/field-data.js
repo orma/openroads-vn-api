@@ -59,7 +59,9 @@ exports.mapExistingIds = function (existingIds, ids) {
   return ids.map(id => {
     // isAnExistingId searches for `id` in the `existingids` list, then casts the search to a boolean. (true if found, false if not)
     const isAnExistingId = Boolean(existingIds.find(existingId => existingId.road_id === id));
-    // return an object with the id and a property telling if field data exists;
-    return {id: id, fieldData: isAnExistingId};
+    // return an object with a k=vprommsId and v=isAnExistingId
+    const returnObj = {};
+    returnObj[id] = isAnExistingId;
+    return returnObj;
   });
 };
