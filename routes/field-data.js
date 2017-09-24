@@ -14,7 +14,7 @@ module.exports = [
    * @apiName FieldGeometries
    * @apiDescription Returns list of each road id's field data, either as a feature collection, or object with data grouped by source (either RoadLabPro or RouteShoot)
    * @apiVersion 0.1.0
-   * 
+   *
    * @apiExample {curl} Example Usage:
    *    curl http://localhost:4000/field/024LC00002,024LC00001/geometries?grouped=true
    *
@@ -62,7 +62,7 @@ module.exports = [
    *          ],
    *          properties: {
    *            source: 'RoadLabPro',
-   *            vProMMs: '024LC00001' 
+   *            vProMMs: '024LC00001'
    *          }
    *        },
    *        {
@@ -81,7 +81,7 @@ module.exports = [
    *      ]
    *    }
    *  ]
-   *  
+   *
    * @apiExample {curl} Example Usage:
    *    curl http://localhost:4000/field/024LC00002,024LC00001/geometries?grouped=false
    *
@@ -104,6 +104,7 @@ module.exports = [
       // get the vpromms id supplied in request parameters
       const ids = req.params.ids.split(',');
       const grouped = (req.query.grouped == 'true');
+      const download = (req.query.download == 'true');
       // select roads with
       knex('field_data_geometries')
       .whereIn('road_id', ids)
@@ -111,6 +112,11 @@ module.exports = [
       .then(geoms => {
         // if the query asks for geometries grouped, then provide them as so. if not, just return a feature collection of all records.
         geoms = grouped ? groupGeometriesById(geoms) : makeGeomsFC(geoms);
+        if (download) {
+          return res(JSON.stringify(geoms))
+          .header('Content-Type', 'text/json')
+          .header('Content-Disposition', `attachment; filename=${ids.join('-')}.geojson`);
+        }
         res(geoms);
       })
       .catch(e => {
@@ -144,7 +150,7 @@ module.exports = [
       .select('road_id')
       .then(existingIds => {
         existingIds = mapExistingIds(existingIds, ids);
-        res(existingIds);
+        res(existingIds)
       });
     }
   }
