@@ -28,7 +28,7 @@ exports.groupGeometriesById = function (geoms) {
         // make properties object that includes the sourceObj's source name as well as the roadId
         let props = {properties: {source: sourceObj.source, vProMMsId: k}};
         // parse geometry string to a json
-        let geom = JSON.parse(sourceObj.geometry);
+        let geom = { geometry: JSON.parse(sourceObj.geometry) };
         // return props and geom as a single object (mirroring a geojson feature)
         return Object.assign(geom, props);
       });
@@ -56,7 +56,7 @@ exports.makeGeomsFC = function (geoms) {
   // make features, a list of geojson features, from the raw geoms arrayprovided
   let features = map(geoms, (geom, k) => {
     // first parse the stringified feature geometry generated from the ST_ASGeoJSON() query used as part of the endpoint
-    const geometry = JSON.parse(geom.geometry);
+    const geometry = { geometry: JSON.parse(geom.geometry) };
     // genereate a properties object with the road_id and source provided too from the query
     const props = {properties:  {road_id: geom.road_id, source: geom.source}};
     // return a geojson feature including both the geometry and properties

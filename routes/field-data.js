@@ -117,8 +117,7 @@ module.exports = [
           .header('Content-Type', 'text/json')
           .header('Content-Disposition', `attachment; filename=${ids.join('-')}.geojson`);
         }
-        res(geoms)
-        .header('Content-Type', 'text/json');
+        res(geoms);
       })
       .catch(e => {
         // deal with any errors
@@ -130,7 +129,7 @@ module.exports = [
   {
    /**
     * @api {get} /field/{ids}/exists Indicate vpromms id uses field data
-    * @apiGroup Field
+    * @apiGroup Fiel
     * @apiName Field Exists
     * @apiDescription Returns list of objects for each provided road id, where each object indicates if it has attached field data
     * @apiVersion 0.1.0
