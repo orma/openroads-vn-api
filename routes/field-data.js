@@ -9,10 +9,13 @@ var mapExistingIds = require('../services/field-data').mapExistingIds;
 module.exports = [
   {
   /**
-   * @api {get} /field/{ids}/geometries Field Data by source
+   * @api {get} /field/{ids}/geometries Field Data for VProMMs Ids
    * @apiGroup Field
    * @apiName FieldGeometries
-   * @apiDescription Returns list of each road id's field data, either as a feature collection, or object with data grouped by source (either RoadLabPro or RouteShoot)
+   * @apiParam {string} ids string representation of a list of VProMMs ids list
+   * @apiParam {string} grouped true/false string that when true serves back a VProMMs Ids' geometries grouped by source. When false, GeoJSONs are not grouped
+   * @apiParam {string} download true/false string that when true makes api serves data with headers that allow download. WHen false, no additional headers are added to the response.
+   * @apiDescription Returns list of each VProMMs id's field data. This can be served either as a feature collection, or object with data grouped by source (RoadLabPro or RouteShoot)
    * @apiVersion 0.1.0
    *
    * @apiExample {curl} Example Usage:
@@ -88,11 +91,11 @@ module.exports = [
    * @apiSuccessExample {json} Success-Response:
    *   { type: "FeatureCollection",
    *     features: [
-   *       { type: "Point",
-   *         coordinates: [ 10.9003, 54.07834 ],
+   *       { type: "Line",
+   *         coordinates: [...],
    *         properties: { road_id: "024LC00001", source: "RoadLabPro" } },
-   *       { type: "Point",
-   *         coordinates: [ 10.8003, 54.09834 ],
+   *       { type: "Line",
+   *         coordinates: [...],
    *         properties: { road_id: "024LC00002", source: "RouteShoot" } }
    *     ]
    *   }
@@ -103,20 +106,23 @@ module.exports = [
     handler: function (req, res) {
       // get the vpromms id supplied in request parameters
       const ids = req.params.ids.split(',');
+      // get the boolean representations of grouped and download to guide how to serve the field data
       const grouped = (req.query.grouped == 'true');
       const download = (req.query.download == 'true');
-      // select roads with
+      // select roads from field_data_geometries where ids are in ${ids}
       knex('field_data_geometries')
       .whereIn('road_id', ids)
       .select('type as source', 'road_id', knex.raw(`ST_AsGeoJSON(geom) as geometry`))
       .then(geoms => {
-        // if the query asks for geometries grouped, then provide them as so. if not, just return a feature collection of all records.
+        // if the query asks for geometries grouped, use groupGeometriesById to provide them as so. if not, just return a feature collection of all records using makeGeomsFC.
         geoms = grouped ? groupGeometriesById(geoms) : makeGeomsFC(geoms);
+        // if download param supplied, serve back geoms with correct headers for download
         if (download) {
           return res(JSON.stringify(geoms))
           .header('Content-Type', 'text/json')
           .header('Content-Disposition', `attachment; filename=${ids.join('-')}.geojson`);
         }
+        // when not so, do not apply download headers
         res(geoms);
       })
       .catch(e => {
@@ -128,10 +134,11 @@ module.exports = [
   },
   {
    /**
-    * @api {get} /field/{ids}/exists Indicate vpromms id uses field data
-    * @apiGroup Fiel
+    * @api {get} /field/{ids}/exists Indicate if VProMMs ids' have related field data in the database
+    * @apiGroup Field
     * @apiName Field Exists
-    * @apiDescription Returns list of objects for each provided road id, where each object indicates if it has attached field data
+    * @apiParam {string} ids string representation of ids for which to search related field data
+    * @apiDescription Returns list of objects for each provided road id, where each object indicates if an id has attached field data in the database.
     * @apiVersion 0.1.0
     *
     * @apiExample {curl} Example Usage:
@@ -144,13 +151,17 @@ module.exports = [
     method: 'GET',
     path: '/field/{ids}/exists',
     handler: function (req, res) {
+      // generate list from string representation in request params
       const ids = req.params.ids.split(',');
+      // select from field_data_geometries road ids that are in ids list
       knex('field_data_geometries')
       .whereIn('road_id', ids)
       .select('road_id')
       .then(existingIds => {
+        // pass to mapExistingIds the existing and original ids, returning list of objects denoting if they indeed exist or not.
         existingIds = mapExistingIds(existingIds, ids);
-        res(existingIds)
+        // serve back newly mapped existingIds
+        res(existingIds);
       });
     }
   }
