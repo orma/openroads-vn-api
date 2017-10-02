@@ -40,6 +40,7 @@
   "dependencies": {
     "@turf/helpers": "^4.7.3",
     "apidoc": "^0.12.3",
+    "bluebird": "^3.5.0",
     "boom": "^2.7.0",
     "d3-dsv": "^1.0.7",
     "debug": "^2.2.0",
