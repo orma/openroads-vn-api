@@ -102,16 +102,16 @@ module.exports = [
    *
    */
     method: 'GET',
-    path: '/field/{ids}/geometries',
+    path: '/field/geometries/{id}',
     handler: function (req, res) {
       // get the vpromms id supplied in request parameters
-      const ids = req.params.ids.split(',');
+      const id = req.params.id;
       // get the boolean representations of grouped and download to guide how to serve the field data
       const grouped = (req.query.grouped == 'true');
       const download = (req.query.download == 'true');
       // select roads from field_data_geometries where ids are in ${ids}
       knex('field_data_geometries')
-      .whereIn('road_id', ids)
+      .where({'road_id': id})
       .select('type as source', 'road_id', knex.raw(`ST_AsGeoJSON(geom) as geometry`))
       .then(geoms => {
         // if the query asks for geometries grouped, use groupGeometriesById to provide them as so. if not, just return a feature collection of all records using makeGeomsFC.
