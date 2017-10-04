@@ -1,20 +1,61 @@
 version: 2
+
 jobs:
   build:
+    #machine: true
     docker:
-      #- image: docker:17.05.0-ce-git   # (1)
-      - image: docker/compose:1.16.0
-    working_directory: ~/openroads-vn-api
+      - image: docker:17.05.0-ce-git
+    working_dir: ~/project
     steps:
+      - restore_cache:
+          keys:
+            - v0-repo-{{ .Branch }}-{{ .Revision }}
+            - v0-repo-{{ .Branch }}
+            - v0-repo
       - checkout
-      - setup_remote_docker   # (2)
-
-      # build and push Docker image
+      - save_cache:
+          key: v0-repo-{{ .Branch }}-{{ .Revision }}
+          paths:
+            - ~/project
       - run:
-          name: test
-          command: docker-compose run api npm test
-
-      # until the package runs on node >= 6.10 can't deploy with kes
-      #- run:
-          #name: deploy to AWS
-          #command: docker-compose run deploy
+          name: Creating .env for environment variables
+          command: |
+            echo "AWS_REGION=$AWS_REGION" >> .env
+            echo "AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID" >> .env
+            echo "AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY" >> .env            
+            echo "DATABASE_URL=$DATABASE_URL" >> .env
+            echo "RDS_USER=$RDS_USER" >> .env
+            echo "RDS_PASS=$RDS_PASS" >> .env
+      - setup_remote_docker
+      - run:
+          name: Install dependencies
+          command: |
+            apk add --no-cache py-pip=9.0.0-r1
+            pip install docker-compose==1.16.0
+      - run:
+          name: Load Docker image layer cache
+          command: |
+            set +o pipefail
+            docker load -i ~/openroads-vn-db.tar | true
+            docker load -i ~/openroads-vn-api.tar | true
+      - run:
+          name: Build docker image
+          command: docker-compose build
+      - run:
+          name: Save Docker image layer cache
+          command: |
+            docker save -o ~/openroads-vn-db.tar developmentseed/openroads-vn-db:latest
+            docker save -o ~/openroads-vn-api.tar developmentseed/openroads-vn-api:latest
+      - run:
+          name: Run tests
+          command: |
+            docker-compose up -d api
+          #docker-compose exec api npm test
+      - run:
+          name: Deploy
+          command: |
+            if [ "${CIRCLE_BRANCH}" == "master" ]; then
+              docker login -e $DOCKER_EMAIL -u $DOCKER_USER -p $DOCKER_PASS
+              docker push developmentseed/openroads-vn-api:latest
+              docker-compose run deploy
+            fi

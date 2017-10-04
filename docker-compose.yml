@@ -1,22 +1,39 @@
-version: "3"
+version: "2"
 services:
   db:
     build: ./db
+    image: developmentseed/openroads-vn-db:latest
+    container_name: vn-api-db
+    networks:
+      - openroads
     ports:
-      - "5433:5432"
+      - "5432:5432"
     environment:
       - POSTGRES_DB=openroads
+
   api:
     build: .
-    environment:
-      - DATABASE_URL=postgres://postgres@postgres:5432/openroads
+    image: developmentseed/openroads-vn-api:latest
+    env_file: .env
     links:
       - db:postgres
+    depends_on:
+      - db
     ports:
       - "4000:4000"
+    networks:
+      - openroads
+    environment:
+      - DATABASE_URL=postgres://postgres@db:5432/openroads
+
   deploy:
-    build: .
-    command: npm run kes-app-update
+    image: developmentseed/openroads-vn-api:latest
+    command: node_modules/.bin/kes cf update -k aws/app --env-file .env
+    env_file: .env
     environment:
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+
+networks:
+  openroads:
+

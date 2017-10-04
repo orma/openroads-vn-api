@@ -93,6 +93,8 @@ module.exports.connection = {
 }
 ```
 
+If you want to run the api w/a db that includes fixture data, run `yarn docker-start-fixture`
+
 Now you can run your tests on a separate database:
 
 ```sh

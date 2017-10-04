@@ -58,9 +58,13 @@ async function geometriesHandler (req, res) {
         // Add roads to the production geometries tables, OSM format
         // TO-DO: if a road was already present in field gemoetries,
         // do not ingest it into the production geometries
-        const features = fileReads.map(fr =>
-          Object.assign(fr.geom, {properties: fr.road_id ? {or_vpromms_id: fr.road_id} : {}})
-        );
+        const features = fileReads.map(fr => {
+          // All geometries should be tagged with a `highway` value
+          // `road` is temporary until we can do better classification here
+          const properties = {highway: 'road'}
+          if (fr.road_id) { properties.or_vpromms_id = fr.road_id; }
+          return Object.assign(fr.geom, {properties: properties})
+        });
         // Need to replace the `<osm>` top-level tag with `<osmChange><create>`
         const osm = libxml.parseXmlString(geojsontoosm(features))
           .root().childNodes().map(n => n.toString()).join('');

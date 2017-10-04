@@ -15,6 +15,7 @@
     "docker-test": "docker-compose build && docker-compose run api npm test; docker-compose stop && docker-compose rm -f",
     "docker-start-db": "docker-compose up -d postgres",
     "docker-kill-db": "docker-compose stop && docker-compose rm -f",
+    "docker-start-fixture": "docker-compose up --build db api",
     "gendoc": "./node_modules/.bin/apidoc -i routes",
     "kes-app-create": "kes cf create --kes-folder aws/app --region us-east-1 --role arn:aws:iam::552819999234:role/orma-deployer-DeployerRole-8PPOXFYZNHL5",
     "kes-app-update": "kes cf update --kes-folder aws/app --region us-east-1 --role arn:aws:iam::552819999234:role/orma-deployer-DeployerRole-8PPOXFYZNHL5",

@@ -65,6 +65,112 @@ Resources:
       Roles:
         - !Ref ECSRole
 
+  # role for Lambdas that are NOT used with APIGateway
+  LambdaProcessingRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "{{stackName}}-lambda-processing"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Path: "/"
+      Policies:
+        - PolicyName: ProcessingLambda
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - lambda:GetFunction
+                  - lambda:invokeFunction
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:DescribeLogStreams
+                  - logs:PutLogEvents
+                Resource: "*"
+              # Allow writing to ingest buckets
+              - Effect: Allow
+                Action:
+                  - s3:AbortMultipartUpload
+                  - s3:Get*
+                  - s3:Put*
+                  - s3:List*
+                  - s3:DeleteObject
+                  - s3:DeleteObjectVersion
+                Resource:
+                  - !Sub "arn:aws:s3:::{{buckets.internal}}"
+                  - !Sub "arn:aws:s3:::{{buckets.internal}}/*"
+              # Allow access to dynamoDB
+              - Effect: Allow
+                Action:
+                  - dynamodb:DeleteItem
+                  - dynamodb:DescribeStream
+                  - dynamodb:GetItem
+                  - dynamodb:GetRecords
+                  - dynamodb:GetShardIterator
+                  - dynamodb:ListStreams
+                  - dynamodb:ListTables
+                  - dynamodb:PutItem
+                  - dynamodb:Query
+                  - dynamodb:Scan
+                  - dynamodb:UpdateItem
+                Resource: !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{stackName}}-*"
+              # Allow access to SQS
+              - Effect: Allow
+                Action:
+                  - sqs:SendMessage
+                  - sqs:ReceiveMessage
+                  - sqs:ChangeMessageVisibility
+                  - sqs:DeleteMessage
+                  - sqs:GetQueueUrl
+                  - sqs:GetQueueAttributes
+                Resource: !Sub "arn:aws:sqs:${AWS::Region}:${AWS::AccountId}:{{stackName}}-*"
+
+              # Allow state machine interactions
+              - Effect: Allow
+                Action:
+                - states:SendTaskFailure
+                - states:SendTaskSuccess
+                - states:GetActivityTask
+                - states:DescribeActivity
+                - states:DescribeExecution
+                - states:StartExecution
+                - states:StopExecution
+                - states:ListStateMachines
+                Resource: arn:aws:states:*:*:*
+
+              # allow adding/editing/deleting of rules associated with this deployment
+              - Effect: Allow
+                Action:
+                  - events:DisableRule
+                  - events:EnableRule
+                  - events:ListRules
+                  - events:PutRule
+                  - events:DeleteRule
+                  - events:DescribeRule
+                Resource: !Sub "arn:aws:events:${AWS::Region}:${AWS::AccountId}:rule/{{stackName}}-*"
+
+              # this is needed for running Lambda in a VPC
+              # This might not be needed in the NGAP environment
+              # if all lambdas are already running in a general VPC
+              # environment
+              - Effect: Allow
+                Action:
+                  - ec2:CreateNetworkInterface
+                  - ec2:DescribeNetworkInterfaces
+                  - ec2:DeleteNetworkInterface
+                Resource: '*'
+
+              # allow publishing to SNS
+              - Effect: Allow
+                Action:
+                  - sns:publish
+                Resource: '*'
+
 Outputs:
   InstanceProfileArn:
     Value: !GetAtt InstanceProfile.Arn
