@@ -145,7 +145,7 @@ module.exports = [
     *    curl http://localhost:4000/field/024LC00002,024LC00001/exists
     *
     * @apiSuccessExample {json} Success-Response:
-    *  [{'024LC00002': true}, {'024LC00001': false}]
+    *  ['024LC00002']
     *
     */
     method: 'GET',
