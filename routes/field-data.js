@@ -67,6 +67,7 @@ module.exports = [
       const id = req.params.id;
       const grouped = (req.query.grouped == 'true');
       const download = (req.query.download == 'true');
+      console.log(download);
       knex('field_data_geometries')
       .where({'road_id': id})
       .select('type as source', 'road_id', knex.raw(`ST_AsGeoJSON(geom) as geometry`))
@@ -75,7 +76,7 @@ module.exports = [
         if (download) {
           return res(JSON.stringify(geoms))
           .header('Content-Type', 'text/json')
-          .header('Content-Disposition', `attachment; filename=${ids.join('-')}.geojson`);
+          .header('Content-Disposition', `attachment; filename=${id}.geojson`);
         }
         res(geoms);
       })
