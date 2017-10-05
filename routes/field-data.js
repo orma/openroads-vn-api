@@ -157,11 +157,13 @@ module.exports = [
       knex('field_data_geometries')
       .whereIn('road_id', ids)
       .select('road_id')
-      .then(existingIds => {
-        // pass to mapExistingIds the existing and original ids, returning list of objects denoting if they indeed exist or not.
-        existingIds = mapExistingIds(existingIds, ids);
-        // serve back newly mapped existingIds
-        res(existingIds);
+      .then(existingFieldData => {
+        const existingIds = existingFieldData.map(record => record.road_id);
+        // return only ids that have field data in db.
+        res(ids.reduce((accum, id) => {
+          if (existingIds.indexOf(id) !== -1) { accum.push(id); }
+          return accum; }, []
+        ));
       });
     }
   }
