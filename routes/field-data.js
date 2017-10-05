@@ -9,7 +9,7 @@ var mapExistingIds = require('../services/field-data').mapExistingIds;
 module.exports = [
   {
   /**
-   * @api {get} /field/{ids}/geometries Field Data for VProMMs Ids
+   * @api {get} /field/geometries/{id} Field Data for VProMMs Ids
    * @apiGroup Field
    * @apiName FieldGeometries
    * @apiParam {string} ids string representation of a list of VProMMs ids list

@@ -16,8 +16,10 @@ exports.groupGeometriesById = function (geoms) {
     // map list of row objects to geojson features.
     return fc(geom.map((geom) => {
       return {
-        type: 'LineString',
-        properties: {id: geom.road_id},
+        properties: {
+          road_id: geom.road_id,
+          source: geom.source
+        },
         geometry: JSON.stringify(geom.geometry)
       };
     }));
@@ -31,17 +33,15 @@ exports.groupGeometriesById = function (geoms) {
  * @return {featureCollection} feature collection for roads.
  */
 exports.makeGeomsFC = function (geoms) {
-  // make features, a list of GeoJSON features, from the raw geoms array provided
-  let features = map(geoms, (geom, k) => {
-    // first parse the stringified feature geometry generated from the ST_ASGeoJSON() query used as part of the endpoint
-    const geometry = { geometry: JSON.parse(geom.geometry) };
-    // generate a properties object with the road_id and source provided too from the query
-    const props = {properties:  {road_id: geom.road_id, source: geom.source}};
-    // return a GeoJSON feature including both the geometry and properties
-    return Object.assign(geometry, props);
-  });
-  // return this list of features passed through the turn feature collection function, which returns a feature collection
-  return fc(features);
+  return fc(geoms.map(geom => {
+    return {
+      properties: {
+        road_id: geom.road_id,
+        source: geom.source
+      },
+      geometry: JSON.parse(geom.geometry),
+    };
+  }));
 };
 
 
