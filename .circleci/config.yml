@@ -5,6 +5,8 @@ jobs:
     #machine: true
     docker:
       - image: docker:17.05.0-ce-git
+        environment:
+          IMGNAME=developmentseed/openroads-vn-api
     working_dir: ~/project
     steps:
       - restore_cache:
@@ -23,38 +25,40 @@ jobs:
             echo "AWS_REGION=$AWS_REGION" >> .env
             echo "AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID" >> .env
             echo "AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY" >> .env
+            echo "MAPBOX_ACCOUNT=$MAPBOX_ACCOUNT" >> .env
+            echo "MAPBOX_ACCESS_TOKEN=$MAPBOX_ACCESS_TOKEN" >> .env
             echo "RDS_USER=$RDS_USER" >> .env
             echo "RDS_PASS=$RDS_PASS" >> .env
       - setup_remote_docker
-      - run:
-          name: Install dependencies
-          command: |
-            apk add --no-cache py-pip=9.0.0-r1
-            pip install docker-compose==1.16.0
+      #- run:
+      #    name: Install dependencies
+      #    command: |
+      #      apk add --no-cache py-pip=9.0.0-r1
+      #      pip install docker-compose==1.16.0
       - run:
           name: Load Docker image layer cache
           command: |
             set +o pipefail
-            docker load -i ~/openroads-vn-db.tar | true
-            docker load -i ~/openroads-vn-api.tar | true
+            docker load -i ~/project.tar | true
       - run:
           name: Build docker image
-          command: docker-compose build
+          command: docker build --cache-from=project -t $IMGNAME:latest .
       - run:
           name: Save Docker image layer cache
           command: |
-            docker save -o ~/openroads-vn-db.tar developmentseed/openroads-vn-db:latest
-            docker save -o ~/openroads-vn-api.tar developmentseed/openroads-vn-api:latest
-      - run:
-          name: Run tests
-          command: |
-            docker-compose up -d api
+            docker save -o ~/project.tar $IMGNAME:latest
+      #- run:
+      #    name: Run tests
+      #    command: |
+      #      docker-compose up -d api
           #docker-compose exec api npm test
       - run:
           name: Deploy
           command: |
             if [ "${CIRCLE_BRANCH}" == "master" ]; then
+              VERSION=$(grep -m1 version package.json | awk -F: '{ print $2 }' | sed 's/[", ]//g')
               docker login -e $DOCKER_EMAIL -u $DOCKER_USER -p $DOCKER_PASS
-              docker push developmentseed/openroads-vn-api:latest
-              docker-compose run deploy
+              docker tag $IMGNAME:latest $IMGNAME:$VERSION
+              docker push $IMGNAME
+              docker run --env-file .env $IMGNAME:latest node_modules/.bin/kes cf update -k aws/app
             fi

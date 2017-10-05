@@ -70,9 +70,14 @@ module.exports = function queryWays(knex, wayIds) {
 
     // attach associated nodes and tags to ways
     result.ways.forEach(function (way) {
-      way.nodes = result.waynodes.filter(function(waynode) {
+      let nodes = result.waynodes.filter(function(waynode) {
         return waynode.way_id === way.id;
       });
+      // makes this compatible with the geojson formatter
+      nodes.forEach(function(waynode) {
+        waynode.node_id = waynode.id;
+      });
+      way.nodes = nodes;
       way.tags = result.waytags.filter(function(tag) {
         return tag.way_id === way.id;
       });

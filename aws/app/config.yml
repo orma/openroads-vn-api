@@ -27,7 +27,7 @@ ecs:
       name: vn
       containers:
         - name: webapp
-          image: developmentseed/openroads-vn-api:latest
+          image: developmentseed/openroads-vn-api:0.2.0
           cpu: 100
           memory: 800
           ports:
@@ -38,7 +38,7 @@ ecs:
             AWS_DEFAULT_REGION: '!Sub ${AWS::Region}'
             AWS_REGION: '!Sub ${AWS::Region}'
         - name: tiler
-          image: developmentseed/openroads-tiler:latest
+          image: developmentseed/openroads-tiler:0.1.0
           cpu: 25
           memory: 500
           commands:
@@ -46,17 +46,19 @@ ecs:
           envs:
             S3_TEMPLATE: s3://openroads-vn-tiles/tiles/{z}/{x}/{y}.vector.pbf
         - name: vn-tiler
-          image: developmentseed/openroads-vn-tiler:latest
+          image: developmentseed/openroads-vn-tiler:0.1.0
           cpu: 25
           memory: 500
           commands:
             - /opt/app/cron.sh
           envs:
+            MAPBOX_ACCOUNT: {{MAPBOX_ACCOUNT}}
+            MAPBOX_ACCESS_TOKEN: {{MAPBOX_ACCESS_TOKEN}}
             S3_DUMP_BUCKET: openroads-vn-dumps
             S3_PROPERTIES_BUCKET: openroads-vn-properties
             WHICH_SCRIPT: make-analysis-and-display
         - name: tilemap
-          image: developmentseed/openroads-tilemap:latest
+          image: developmentseed/openroads-tilemap:0.1.0
           cpu: 50
           memory: 800
           ports:

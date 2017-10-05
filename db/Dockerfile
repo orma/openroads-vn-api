@@ -1,4 +1,4 @@
-FROM mdillon/postgis:9.4-alpine
+FROM mdillon/postgis:9.6-alpine
 # additional libs needed for wget
 RUN apk update && apk add ca-certificates wget && update-ca-certificates   
 # make needed directories. 

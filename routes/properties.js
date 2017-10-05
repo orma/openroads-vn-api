@@ -4,7 +4,6 @@ var Boom = require('boom');
 
 var knex = require('../connection.js');
 var api = 'http://localhost:4000/';
-var queryWays = require('../services/query-ways');
 var flattenDeep = require('lodash').flattenDeep;
 var groupBy = require('lodash').groupBy;
 var includes = require('lodash').includes;

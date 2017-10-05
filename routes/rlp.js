@@ -64,7 +64,7 @@ async function geometriesHandler (req, res) {
           // All geometries should be tagged with a `highway` value
           // `road` is temporary until we can do better classification here
           const properties = {highway: 'road'}
-          if (fr.road_id) { properties.or_vpromms_id = fr.road_id; }
+          if (fr.road_id) { properties.or_vpromms = fr.road_id; }
           return Object.assign(fr.geom, {properties: properties})
         });
         // Need to replace the `<osm>` top-level tag with `<osmChange><create>`

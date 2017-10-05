@@ -22,13 +22,21 @@ module.exports = function toGeoJSON(data, geometryType) {
       return [node.longitude / ratio, node.latitude / ratio];
     });
 
-    var properties = _.zipObject(way.tags.map(function (t) {
+    var properties = _.fromPairs(way.tags.map(function (t) {
       return [t.k, t.v];
     }));
 
+    var meta = {
+      id: way.id,
+      changeset: way.changeset_id,
+      timestamp: way.timestamp,
+      version: way.version
+    };
+
     return {
       type: 'Feature',
-      properties: properties,
+      properties,
+      meta,
       geometry: {
         type: geometryType,
         coordinates: geometryType == 'Polygon' ? [nodeCoordinates] : nodeCoordinates
