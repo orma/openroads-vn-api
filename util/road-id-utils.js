@@ -29,5 +29,27 @@ module.exports = {
       return found;
     }, null);
     return roadId;
+  },
+  getResponsibilityFromRoadId: roadId => {
+    // Extract the road's responsibility from its ID
+    const RESPONSIBILITIES = {
+      '1': 'national',
+      '2': 'provincial',
+      '3': 'district',
+      '4': 'commune',
+      '5': 'village',
+      '6': 'rural',
+      '7': 'special',
+      '8': null,
+      '9': null,
+      '0': null
+    };
+    const RESPONSIBILITY_PATTERN = /^\d{2}(\d)[a-zA-Z]{2}\d{5}$/;
+    const match = roadId.match(RESPONSIBILITY_PATTERN);
+    if (match) {
+      return RESPONSIBILITIES[match[1]];
+    } else {
+      return null;
+    }
   }
 };

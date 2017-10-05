@@ -9,6 +9,7 @@ const unzip = require('unzip2');
 const parseGeometries = require('../services/rlp-geometries');
 const parseProperties = require('../services/rlp-properties');
 const uploadChangeset = require('./osc-upload').handler;
+const getResponsibilityFromRoadId = require('../util/road-id-utils').getResponsibilityFromRoadId;
 
 const st = knexPostgis(knex);
 
@@ -35,9 +36,10 @@ async function geometriesHandler (req, res) {
         _.uniqBy(fileReads, fr => fr.road_id)
         .map(fr => {
           if (fr.road_id && !knownRoads.includes(fr.road_id)) {
+            const or_responsibility = getResponsibilityFromRoadId(fr.road_id);
             return knex.insert({
               id: fr.road_id,
-              properties: {}
+              properties: {or_responsibility}
             }).into('road_properties');
           } else {
             return Promise.resolve();
@@ -98,9 +100,10 @@ async function propertiesHandler (req, res) {
         _.uniqBy(rows, r => r.road_id)
         .map(r => {
           if (r.road_id && !knownRoads.includes(r.road_id)) {
+            const or_responsibility = getResponsibilityFromRoadId(r.road_id);
             return knex.insert({
               id: r.road_id,
-              properties: {}
+              properties: {or_responsibility}
             }).into('road_properties');
           } else {
             return Promise.resolve();

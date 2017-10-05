@@ -4,6 +4,7 @@ const _ = require('lodash');
 const csvParse = require('d3-dsv').csvParse;
 const Boom = require('boom');
 const knex = require('../connection.js');
+const getResponsibilityFromRoadId = require('../util/road-id-utils').getResponsibilityFromRoadId;
 
 function upload (req, res) {
   var parsed;
@@ -42,12 +43,11 @@ function upload (req, res) {
             'properties',
             Object.assign({}, road.properties, _.omit(parsed.find(p => p[roadIdName]), roadIdName))
           )
-        ).concat(newIds.map(id =>
-          knex('road_properties').insert({
-            id,
-            properties: _.omit(parsed.find(p => p[roadIdName]), roadIdName)
-          })
-        ))
+        ).concat(newIds.map(id => {
+          const properties = _.omit(parsed.find(p => p[roadIdName]), roadIdName);
+          if (!properties.or_responsibility) { properties.or_responsibility = getResponsibilityFromRoadId(id); }
+          return knex('road_properties').insert({id, properties});
+        }))
       ).then(() => res({
         tabular: {
           new_roads: {

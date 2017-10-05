@@ -163,6 +163,15 @@ Resources:
           Cpu: {{#if cpu }}{{ cpu }}{{ else }}10{{/if}}
           Essential: true
           Environment:
+            - Name: DATABASE_URL
+              Value:
+                "Fn::Join":
+                  - ""
+                  - - "postgres://{{../../rds.username}}:{{../../rds.password}}@"
+                    - !GetAtt RDS.Endpoint.Address
+                    - ":"
+                    - !GetAtt RDS.Endpoint.Port
+                    - "/{{../../rds.name}}"
           {{#each envs}}
             - Name: {{@key}}
               Value: {{this}}

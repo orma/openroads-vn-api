@@ -3,11 +3,11 @@
 --
 
 CREATE TABLE tasks (
-	id text PRIMARY KEY,
-	way_id int REFERENCES current_ways,
-        neighbors text[]
-	pending boolean DEFAULT FALSE
+	way_id int,
+        neighbors text[],
+	pending BOOLEAN DEFAULT FALSE
 );
 
+ALTER TABLE tasks ADD COLUMN id SERIAL PRIMARY KEY;
 CREATE INDEX tasks_task_idx ON tasks USING btree (id);
 CREATE INDEX tasks_way_idx ON tasks USING btree (way_id);

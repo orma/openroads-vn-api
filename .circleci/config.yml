@@ -22,8 +22,7 @@ jobs:
           command: |
             echo "AWS_REGION=$AWS_REGION" >> .env
             echo "AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID" >> .env
-            echo "AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY" >> .env            
-            echo "DATABASE_URL=$DATABASE_URL" >> .env
+            echo "AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY" >> .env
             echo "RDS_USER=$RDS_USER" >> .env
             echo "RDS_PASS=$RDS_PASS" >> .env
       - setup_remote_docker
