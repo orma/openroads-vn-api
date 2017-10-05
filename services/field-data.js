@@ -21,7 +21,7 @@ exports.groupGeometriesById = function (geoms) {
           road_id: geom.road_id,
           source: geom.source
         },
-        geometry: JSON.stringify(geom.geometry)
+        geometry: JSON.parse(geom.geometry)
       };
     }));
   });
