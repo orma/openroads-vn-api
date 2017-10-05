@@ -2,6 +2,7 @@
 
 var _debug = require('debug');
 var Hapi = require('hapi');
+var Inert = require('inert');
 var util = require('util');
 var xml2json = require('xml2json');
 
@@ -29,6 +30,8 @@ server.ext('onRequest', function(req, res) {
 });
 
 // Register routes
+server.register(Inert, () => {});
+
 server.register({
   register: require('hapi-router'),
   options: {

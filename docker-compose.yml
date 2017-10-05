@@ -1,22 +1,52 @@
-version: "3"
+version: "2"
 services:
   db:
     build: ./db
+    image: developmentseed/openroads-vn-db:latest
+    container_name: vn-api-db
     ports:
       - "5433:5432"
     environment:
       - POSTGRES_DB=openroads
+
   api:
     build: .
-    environment:
-      - DATABASE_URL=postgres://postgres@postgres:5432/openroads
-    links:
-      - db:postgres
+    image: developmentseed/openroads-vn-api:latest
+    env_file: .env
+    depends_on:
+      - db
     ports:
-      - "4000:4000"
-  deploy:
-    build: .
-    command: npm run kes-app-update
+      - "80:4000"
     environment:
-      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
-      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - DATABASE_URL=postgres://postgres@db:5432/openroads
+
+  tiler:
+    image: developmentseed/openroads-tiler:latest
+    env_file: .env
+    command: ./cron.sh
+    environment:
+      - S3_TEMPLATE=s3://openroads-vn-tiles/tiles/{z}/{x}/{y}.vector.pbf
+      - DATABASE_URL=postgres://postgres@db:5432/openroads
+
+  vn-tiler:
+    image: developmentseed/openroads-vn-tiler:latest
+    env_file: .env
+    command: ./cron.sh
+    environment:
+      - S3_DUMP_BUCKET=openroads-vn-dumps
+      - S3_PROPERTIES_BUCKET=openroads-vn-properties
+      - WHICH_SCRIPT=make-analysis-and-display
+      - DATABASE_URL=postgres://postgres@db:5432/openroads
+
+  tilemap:
+    image: developmentseed/openroads-tilemap:latest
+    env_file: .env
+    ports:
+      - "3000:3000"
+    environment:
+      - BUCKET_URL=http://openroads-vn-tiles.s3-website-us-east-1.amazonaws.com/tiles
+
+  deploy:
+    image: developmentseed/openroads-vn-api:latest
+    command: node_modules/.bin/kes cf update -k aws/app --env-file .env
+    env_file: .env

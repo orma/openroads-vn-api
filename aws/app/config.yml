@@ -1,48 +1,76 @@
 stackName: orma
 
-stage: dev
+stage: prod
 
 buckets:
   internal: orma-d-deploy
 
+lambdaProcessingRoleArn: {{iamroles.lambdaProcessingRoleArn}}
+
+rds:
+  name: openroads
+  username: {{RDS_USER}}
+  password: {{RDS_PASS}}
+
 ecs:
-  amiid: ami-9eb4b1e5
+  amiid: ami-9d1f7efe
   instanceType: t2.medium
   ecsInstanceProfileArn: arn:aws:iam::552819999234:instance-profile/orma-ecs
   volumeSize: 50
-  vpcId: vpc-dfe524ba
-  keyPairName: openroads
-  availabilityZone: us-east-1a
+  vpcId: vpc-1dda3b78
+  keyPairName: orma
+  availabilityZone: '!Sub ${AWS::Region}a'
   maxInstances: 1
   desiredInstances: 1
   services:
     - count: 1
       name: vn
       containers:
-        - name: postgres
-          image: openroads/vn-api-db:0.2.0
-          cpu: 100
-          memory: 800
-          ports:
-            - container: 5432
-              host: 5433
-              protocol: tcp
-          envs:
-            POSTGRES_DB: openroads
-            AWS_DEFAULT_REGION: '!Sub ${AWS::Region}'
-            AWS_REGION: '!Sub ${AWS::Region}'
-
         - name: webapp
-          image: openroads/vn-api-app:0.2.0
+          image: developmentseed/openroads-vn-api:latest
           cpu: 100
           memory: 800
           ports:
             - container: 4000
               host: 80
               protocol: tcp
-          links:
-            - postgres
           envs:
-            DATABASE_URL: postgres://postgres@postgres:5432/openroads
             AWS_DEFAULT_REGION: '!Sub ${AWS::Region}'
             AWS_REGION: '!Sub ${AWS::Region}'
+        - name: tiler
+          image: developmentseed/openroads-tiler:latest
+          cpu: 25
+          memory: 500
+          commands:
+            - /opt/app/cron.sh
+          envs:
+            S3_TEMPLATE: s3://openroads-vn-tiles/tiles/{z}/{x}/{y}.vector.pbf
+        - name: vn-tiler
+          image: developmentseed/openroads-vn-tiler:latest
+          cpu: 25
+          memory: 500
+          commands:
+            - /opt/app/cron.sh
+          envs:
+            S3_DUMP_BUCKET: openroads-vn-dumps
+            S3_PROPERTIES_BUCKET: openroads-vn-properties
+            WHICH_SCRIPT: make-analysis-and-display
+        - name: tilemap
+          image: developmentseed/openroads-tilemap:latest
+          cpu: 50
+          memory: 800
+          ports:
+            - container: 3000
+              host: 3000
+              protocol: tcp
+          envs:
+            BUCKET_URL: http://openroads-vn-tiles.s3-website-us-east-1.amazonaws.com/tiles
+
+
+# used as custom resource for cloudformation manipulation
+#lambdas:
+#- name: CustomBootstrap
+#  handler: init-schema.handler
+#  timeout: 100
+#  memory: 256
+#  source: 'db/lambda/init-schema.js'

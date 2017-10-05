@@ -16,15 +16,17 @@ function oscUpload(req, res) {
       return res(Boom.badRequest('Could not parse XML file'));
     }
   }
+
+  var changesetID = (req.params && req.params.changesetID) || null;
   var uploadParams = {
     params: {
-      changesetID: req.params.changesetID
+      changesetID: changesetID
     },
     payload: {
       osmChange: json
     }
   };
-  if (!req.params.changesetID) {
+  if (!changesetID) {
     create({payload: {uid: 99, user: 'openroads'}},
       function(fromCreate) {
         if (fromCreate.isBoom) {
@@ -32,7 +34,7 @@ function oscUpload(req, res) {
           //Couldn't create a changeset
           res(fromCreate);
         } else {
-          uploadParams.params.changesetID = parseInt(fromCreate.id, 10);
+          uploadParams.params.changesetID = fromCreate;
           upload(uploadParams, res);
         }
       });

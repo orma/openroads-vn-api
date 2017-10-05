@@ -4,7 +4,7 @@
   "description": "The OSM API as a platform in NodeJS",
   "main": "index.js",
   "engines": {
-    "node": "^7"
+    "node": "^8"
   },
   "scripts": {
     "start": "node index.js",
@@ -15,6 +15,7 @@
     "docker-test": "docker-compose build && docker-compose run api npm test; docker-compose stop && docker-compose rm -f",
     "docker-start-db": "docker-compose up -d postgres",
     "docker-kill-db": "docker-compose stop && docker-compose rm -f",
+    "docker-start-fixture": "docker-compose up --build db api",
     "gendoc": "./node_modules/.bin/apidoc -i routes",
     "kes-app-create": "kes cf create --kes-folder aws/app --region us-east-1 --role arn:aws:iam::552819999234:role/orma-deployer-DeployerRole-8PPOXFYZNHL5",
     "kes-app-update": "kes cf update --kes-folder aws/app --region us-east-1 --role arn:aws:iam::552819999234:role/orma-deployer-DeployerRole-8PPOXFYZNHL5",
@@ -39,26 +40,33 @@
   "homepage": "https://github.com/developmentseed/macrocosm",
   "dependencies": {
     "@turf/helpers": "^4.7.3",
+    "@turf/bbox": "^4.6.0",
     "apidoc": "^0.12.3",
     "bluebird": "^3.5.0",
     "boom": "^2.7.0",
     "d3-dsv": "^1.0.7",
     "debug": "^2.2.0",
+    "geojson-stream": "0.0.1",
     "fast-csv": "^2.4.0",
-    "hapi": "^8.4.0",
-    "hapi-router": "^3.0.1",
+    "geojsontoosm": "^0.0.2",
+    "hapi": "^16.6.0",
+    "hapi-router": "^3.5.0",
+    "inert": "^4.2.1",
     "knex": "^0.7.6",
     "knex-postgis": "^0.2.2",
     "libxmljs": "^0.18.7",
     "lodash": "^4.17.4",
+    "moment": "^2.18.1",
     "pg": "^4.3.0",
+    "turf-linestring": "^1.0.2",
+    "turf-midpoint": "^3.0.12",
+    "turf-point": "^2.0.1",
     "unzip2": "^0.2.5",
     "winston": "^0.9.0",
     "xml2json": "^0.9.0",
     "xmlbuilder": "^4.2.0"
   },
   "devDependencies": {
-    "babel-eslint": "^4.1.6",
     "eslint": "^1.10.3",
     "inject-then": "^2.0.0",
     "kes": "^0.1.6",

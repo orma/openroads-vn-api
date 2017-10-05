@@ -1397,3 +1397,10 @@ ALTER TABLE ONLY way_tags
 
 ALTER TABLE ONLY ways
     ADD CONSTRAINT ways_changeset_id_fkey FOREIGN KEY (changeset_id) REFERENCES changesets(id);
+
+--
+-- Name: tasks_way_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY tasks
+    ADD CONSTRAINT tasks_way_id_fkey FOREIGN KEY (way_id) REFERENCES current_ways(id);

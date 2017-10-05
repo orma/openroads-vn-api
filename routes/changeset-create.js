@@ -70,7 +70,7 @@ function changesetCreate(req, res) {
     })
 
     .then(function(id) {
-      return res(id).type('text/plain');
+      return res(String(id));
     })
 
     .catch(function (err) {
