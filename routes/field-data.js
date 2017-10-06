@@ -136,11 +136,10 @@ module.exports = [
     path: '/field/ids',
     handler: function (req, res) {
       knex('field_data_geometries')
+      .distinct('road_id')
       .select('road_id as id')
       .whereNotNull('road_id')
-      .then(roads => res(
-        uniq(roads.map(road => road.id)))
-      );
+      .then(roads => res(roads.map(road => road.id)));
     }
   }
 ];
