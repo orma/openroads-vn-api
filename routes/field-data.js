@@ -2,6 +2,7 @@
 
 var knex = require('../connection.js');
 var Boom = require('boom');
+var uniq = require('lodash').uniq;
 var groupGeometriesById = require('../services/field-data').groupGeometriesById;
 var makeGeomsFC = require('../services/field-data').makeGeomsFC;
 var mapExistingIds = require('../services/field-data').mapExistingIds;
@@ -67,7 +68,6 @@ module.exports = [
       const id = req.params.id;
       const grouped = (req.query.grouped == 'true');
       const download = (req.query.download == 'true');
-      console.log(download);
       knex('field_data_geometries')
       .where({'road_id': id})
       .select('type as source', 'road_id', knex.raw(`ST_AsGeoJSON(geom) as geometry`))
@@ -117,6 +117,29 @@ module.exports = [
           return accum; }, []
         ));
       });
+    },
+  },
+  {
+    /**
+     * @api {get} /field/ids List of VProMMs ids with field data
+     * @apiGroup Field
+     * @apiName Field ids
+     * @apiDescription Returns a list of VPromms ids with field data
+     * @apiVersion 0.1.0
+     * 
+     * @apiExample {curl} Example Usage:
+     *   curl http://localhost:4000/field/ids
+     * @apiSuccessExample {array} Success-Response:
+     *   ["024BX00040","022BX00029", ...] 
+     */
+    method: 'GET',
+    path: '/field/ids',
+    handler: function (req, res) {
+      knex('field_data_geometries')
+      .select('road_id as id')
+      .then(roads => res(
+        uniq(roads.filter(road => road.id).map(road => road.id)))
+      );
     }
   }
 ];
