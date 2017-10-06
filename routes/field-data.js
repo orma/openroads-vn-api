@@ -2,7 +2,6 @@
 
 var knex = require('../connection.js');
 var Boom = require('boom');
-var uniq = require('lodash').uniq;
 var groupGeometriesById = require('../services/field-data').groupGeometriesById;
 var makeGeomsFC = require('../services/field-data').makeGeomsFC;
 var mapExistingIds = require('../services/field-data').mapExistingIds;
@@ -126,11 +125,11 @@ module.exports = [
      * @apiName Field ids
      * @apiDescription Returns a list of VPromms ids with field data
      * @apiVersion 0.1.0
-     * 
+     *
      * @apiExample {curl} Example Usage:
      *   curl http://localhost:4000/field/ids
      * @apiSuccessExample {array} Success-Response:
-     *   ["024BX00040","022BX00029", ...] 
+     *   ["024BX00040","022BX00029", ...]
      */
     method: 'GET',
     path: '/field/ids',
