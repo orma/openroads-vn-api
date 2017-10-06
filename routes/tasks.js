@@ -16,7 +16,7 @@ async function getNextTask (req, res) {
   .limit(1);
   if (!task.length) return res(Boom.notFound('There are no pending tasks'));
   const ids = [task[0].way_id].concat(task[0].neighbors);
-  queryWays(knex, ids).then(function (ways) {
+  queryWays(knex, ids, true).then(function (ways) {
     return res({
       id: task[0].id,
       data: toGeoJSON(ways)
@@ -32,7 +32,7 @@ async function getTask (req, res) {
   .where('id', req.params.taskId)
   if (!task.length) return res(Boom.notFound('No task with that ID'));
   const ids = [task[0].way_id].concat(task[0].neighbors);
-  queryWays(knex, ids).then(function (ways) {
+  queryWays(knex, ids, true).then(function (ways) {
     return res({
       id: task[0].id,
       data: toGeoJSON(ways)
@@ -43,7 +43,8 @@ async function getTask (req, res) {
 }
 
 async function setTaskPending (req, res) {
-  knex('tasks').where('id', req.params.taskId).update({pending: true})
+  console.log('Setting tasks to pending', req.payload.way_ids.join(', '));
+  knex('tasks').whereIn('way_id', req.payload.way_ids).update({pending: true})
   .then(function () {
     return res(req.params.taskId);
   }).catch(function () {
@@ -150,18 +151,20 @@ module.exports = [
 
   {
     /**
-     * @api {PUT} /tasks/:id Update a task's status to 'pending'
+     * @api {PUT} /tasks/pending Update a list of tasks' status to 'pending'
      * @apiGroup Tasks
      * @apiName UpdateTask
      * @apiVersion 0.3.0
      * @apiDescription Set a task status to pending.
      * Returns the updated task ID.
      *
+     * @apiParam {Array} way_ids comma-separated list of way ids to set as 'pending'
+     *
      * @apiExample {curl} Example Usage:
-     *  curl -X PUT http://localhost:4000/tasks/1
+     *  curl -X PUT -H "Content-Type: application/json" -d '{"way_ids": [1, 2, 3]}' http://localhost:4000/tasks/pending
      */
     method: 'PUT',
-    path: '/tasks/{taskId}/pending',
+    path: '/tasks/pending',
     handler: setTaskPending
   }
 ];
