@@ -137,8 +137,9 @@ module.exports = [
     handler: function (req, res) {
       knex('field_data_geometries')
       .select('road_id as id')
+      .whereNotNull('road_id')
       .then(roads => res(
-        uniq(roads.filter(road => road.id).map(road => road.id)))
+        uniq(roads.map(road => road.id)))
       );
     }
   }
