@@ -8,6 +8,7 @@ RUN mkdir -p /opt/app && cp -a /tmp/node_modules /opt/app/
 
 WORKDIR /opt/app
 ADD . /opt/app
+RUN npm run gendoc
 
 EXPOSE 4000
 CMD ["npm", "start"]

@@ -2,7 +2,7 @@
 var _ = require('lodash');
 var Promise = require('bluebird');
 
-module.exports = function queryWays(knex, wayIds) {
+module.exports = function queryWays(knex, wayIds, excludeNotVisible=false) {
 
   // helper to make raw queries, because knex version of these
   // simple selects was MUCH slower
@@ -21,9 +21,12 @@ module.exports = function queryWays(knex, wayIds) {
 
   // TODO this currently does not query nodes that are part of relations,
   // or other relations that are part of relations.
-
+  const currentWays = knex('current_ways').whereIn('id', wayIds);
+  if (excludeNotVisible) {
+    currentWays.where('visible', true);
+  }
   return Promise.all([
-    knex('current_ways').whereIn('id', wayIds),
+    currentWays,
     knex('current_way_nodes')
       .orderBy('way_id', 'asc')
       .orderBy('sequence_id', 'asc')

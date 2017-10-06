@@ -4,6 +4,7 @@ const _ = require('lodash');
 const fastCSV = require('fast-csv');
 const linestring = require('turf-linestring');
 const moment = require('moment');
+const distance = require('@turf/distance');
 const getRoadIdFromPath = require('../util/road-id-utils').getRoadIdFromPath;
 
 moment.locale('en');
@@ -14,6 +15,12 @@ function cleanGeometry (points) {
   const TIME_DIFF_THRESHOLD = 2 * 60 * 1000;
   const DATE_STRING_FORMAT = 'HH:mm:ss YYYY-MMMM-DD';
 
+  // Also, check for and exclude erroneous jumps in space
+  // If they're too far away to be reasonable
+  // Let's say a maximum realistic speed, including GPS uncertanty,
+  // of 150 km/h. Convert to kilometers per millisecond, for ease of use later.
+  const MAX_SPEED_THRESHOLD = 150 / 60 / 60 / 1000;
+
   const pieces = points.reduce((all, one) => {
     if (all[0].length === 0) { return [[one]]; }
 
@@ -23,7 +30,15 @@ function cleanGeometry (points) {
     const previousTime = moment(lastDatum.time, DATE_STRING_FORMAT);
     const currentTime = moment(one.time, DATE_STRING_FORMAT);
 
-    if (currentTime - previousTime <= TIME_DIFF_THRESHOLD) {
+    const timeDiff = currentTime - previousTime;
+
+    const traveledKm = distance(
+      [Number(lastDatum.longitude), Number(lastDatum.latitude)],
+      [Number(one.longitude), Number(one.latitude)]
+    );
+    const speed = traveledKm / timeDiff;
+
+    if (timeDiff <= TIME_DIFF_THRESHOLD && speed <= MAX_SPEED_THRESHOLD) {
       all[all.length - 1] = currentPiece.concat(one);
     } else {
       all = all.concat([[one]]);
