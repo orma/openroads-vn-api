@@ -254,5 +254,38 @@ module.exports = [
         throw e;
       });
     }
+  },
+  {
+    /**
+     * @api {get} /admin/roads?province=provinceId&district=districtId
+     * @apiGroup Admin
+     * @apiName List Admin Roads
+     * @apiDescription Returns list of roads provided province and/or district ids.
+     * @apiVersion 0.1.0
+     * 
+     * @apiParam {string} provinceId a province's id
+     * @apiParam {string} districtid a district's id
+     * 
+     * @apiSuccess {array} array of road ids
+     * 
+     * @apiSuccessExample {JSON} Example Usage:
+     *  curl http://localhost:4000/admin/roads?province=21&district=TH
+     *
+     * @apiSuccessExample {JSON} Success-Response
+     * [ "212TH00008", "212TH00023","212TH00024", ... ]
+     *
+    */
+    method: 'GET',
+    path: '/admin/roads',
+    handler: function (req, res) {
+      const provinceId = req.query.province;
+      // the and statement ensures query works even 
+      // if nothing is passed.
+      const districtId = req.query.district || '';
+      knex('road_properties')
+      .select('id')
+      .whereRaw(`id LIKE '%${provinceId}_${districtId}%'`)
+      .then(roads => res(roads.map(road => road.id)));
+    }
   }
 ];
