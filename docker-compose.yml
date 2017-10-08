@@ -20,22 +20,13 @@ services:
     environment:
       - DATABASE_URL=postgres://postgres@db:5432/openroads
 
-  tiler:
-    image: developmentseed/openroads-tiler:latest
-    env_file: .env
-    command: ./cron.sh
-    environment:
-      - S3_TEMPLATE=s3://openroads-vn-tiles/tiles/{z}/{x}/{y}.vector.pbf
-      - DATABASE_URL=postgres://postgres@db:5432/openroads
-
   vn-tiler:
     image: developmentseed/openroads-vn-tiler:latest
     env_file: .env
     command: ./cron.sh
     environment:
+      - S3_TEMPLATE=s3://openroads-vn-tiles/tiles/{z}/{x}/{y}.vector.pbf
       - S3_DUMP_BUCKET=openroads-vn-dumps
-      - S3_PROPERTIES_BUCKET=openroads-vn-properties
-      - WHICH_SCRIPT=make-analysis-and-display
       - DATABASE_URL=postgres://postgres@db:5432/openroads
 
   tilemap:

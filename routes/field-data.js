@@ -67,7 +67,6 @@ module.exports = [
       const id = req.params.id;
       const grouped = (req.query.grouped == 'true');
       const download = (req.query.download == 'true');
-      console.log(download);
       knex('field_data_geometries')
       .where({'road_id': id})
       .select('type as source', 'road_id', knex.raw(`ST_AsGeoJSON(geom) as geometry`))
@@ -117,6 +116,29 @@ module.exports = [
           return accum; }, []
         ));
       });
+    },
+  },
+  {
+    /**
+     * @api {get} /field/ids List of VProMMs ids with field data
+     * @apiGroup Field
+     * @apiName Field ids
+     * @apiDescription Returns a list of VPromms ids with field data
+     * @apiVersion 0.1.0
+     *
+     * @apiExample {curl} Example Usage:
+     *   curl http://localhost:4000/field/ids
+     * @apiSuccessExample {array} Success-Response:
+     *   ["024BX00040","022BX00029", ...]
+     */
+    method: 'GET',
+    path: '/field/ids',
+    handler: function (req, res) {
+      knex('field_data_geometries')
+      .distinct('road_id')
+      .select('road_id as id')
+      .whereNotNull('road_id')
+      .then(roads => res(roads.map(road => road.id)));
     }
   }
 ];

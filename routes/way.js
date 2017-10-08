@@ -62,9 +62,7 @@ function singleWayBBOX(req, res) {
     })
     .then(function (points) {
       points = fc(flatten(points));
-      const bboxRes = {};
-      bboxRes[vprommsId] = bbox(points);
-      res(bboxRes);
+      res(bbox(points));
     });
   })
   .catch(function (err) {

@@ -91,7 +91,7 @@ module.exports = [
    * @apiSuccess {Array} tabular.updated_roads.road_ids List of which roads these were
    *
    * @apiExample {curl} Example Usage:
-   *  curl -d 'road ID,your property,another property,Yet Another Property
+   *  curl --data-binary 'road ID,your property,another property,Yet Another Property
    *  123AB87654,concrete,52,high
    *  001ZZ33333,gravel,990,high
    *  987NA00001,earth,1.23,medium' -H 'Content-Type: text/csv' http://localhost:4000/properties/roads/tabular
