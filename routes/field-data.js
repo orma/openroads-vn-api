@@ -170,6 +170,7 @@ module.exports = [
       const districtId = req.query.district || '';
       knex('field_data_geometries')
       .select('road_id')
+      .distict('road_id')
       .whereRaw(`road_id LIKE '${provinceId}_${districtId}%'`)
       .whereNotNull('road_id')
       .then(roads => res(roads.map(road => road.road_id)));
