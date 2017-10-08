@@ -140,6 +140,40 @@ module.exports = [
       .whereNotNull('road_id')
       .then(roads => res(roads.map(road => road.id)));
     }
+  },
+  {
+    /**
+     * @api {get} /field/roads?province=provinceId&district=districtId
+     * @apiGroup Field
+     * @apiName List Field Data Admin Roads
+     * @apiDescription Returns list of field data roads provided province and/or district ids.
+     * @apiVersion 0.1.0
+     * 
+     * @apiParam {string} provinceId a province's id
+     * @apiParam {string} districtid a district's id
+     * 
+     * @apiSuccess {array} array of road ids
+     * 
+     * @apiSuccessExample {JSON} Example Usage:
+     *  curl http://localhost:4000/field/roads?province=21&district=TH
+     *
+     * @apiSuccessExample {JSON} Success-Response
+     * [ "212TH00008", "212TH00023","212TH00024", ... ]
+     *
+    */
+    method: 'GET',
+    path: '/field/roads',
+    handler: function (req, res) {
+      const provinceId = req.query.province;
+      // the and statement ensures query works even 
+      // if nothing is passed.
+      const districtId = req.query.district || '';
+      knex('field_data_geometries')
+      .select('road_id')
+      .whereRaw(`road_id LIKE '${provinceId}_${districtId}%'`)
+      .whereNotNull('road_id')
+      .then(roads => res(roads.map(road => road.road_id)));
+    }
   }
 ];
 

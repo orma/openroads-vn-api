@@ -284,7 +284,7 @@ module.exports = [
       const districtId = req.query.district || '';
       knex('road_properties')
       .select('id')
-      .whereRaw(`id LIKE '%${provinceId}_${districtId}%'`)
+      .whereRaw(`id LIKE '${provinceId}_${districtId}%'`)
       .then(roads => res(roads.map(road => road.id)));
     }
   }
