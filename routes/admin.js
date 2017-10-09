@@ -348,6 +348,30 @@ module.exports = [
     }
   },
   {
+     /**
+     * @api {get} /admin/roads/total/{id}
+     * @apiGroup Admin
+     * @apiName List road count for admins that match a given admin identifier
+     * @apiDescription Returns list of road count by vpromms admin identifier for ids matching id parameter
+     * @apiVersion 0.1.0
+     *
+     * @apiParam {string} id admin id
+     * @apiParam {string} level query parameter signifying admin level
+     *
+     * @apiSuccess {array} array of objects with vpromms and field road count for matching vpromms admin levels
+     *
+     * @apiSuccessExample {JSON} Example Usage:
+     *  curl http://localhost:4000/admin/roads/total/21TH?level=district
+     * 
+     *  * @apiSuccessExample {JSON} Success-Response
+     * [
+     *  {
+     *    "total_roads": "52",
+     *    "admin": "21TH"
+     *  }
+     * ]
+     *
+     */
     method: 'GET',
     path: '/admin/roads/total/{id}',
     handler: function (req, res) {
