@@ -287,5 +287,63 @@ module.exports = [
       .whereRaw(`id LIKE '${provinceId}_${districtId}%'`)
       .then(roads => res(roads.map(road => road.id)));
     }
+  },
+  {
+    method: 'GET',
+    path: '/admin/roads/properties',
+    handler: function (req, res) {
+      const provinceId = req.query.province;
+      const districtId = req.query.district || '';
+      const limit = req.query.limit || 100;
+      knex('road_properties')
+      .select('*')
+      .whereRaw(`id LIKE '${provinceId}_${districtId}%'`)
+      .limit(limit)
+      .then(roads => res(roads));
+    }
+  },
+  {
+    /**
+     * @api {get} /admin/roads
+     * @apiName List road count per vpromms admin code 
+     * @apiDescription Returns list of objects with vpromm admin code and their # of roads
+     * @apiVersion 0.1.0
+     *
+     * @apiParam {string} level the admin level being queried
+     *
+     * @apiSuccess {array} array of objects with vpromms identifier and road count
+     *
+     * @apiSuccessExample {JSON} Example Usage:
+     *  curl http://localhost:4000/admin/roads?level=district
+     * 
+     * @apiSuccessExample {JSON} Success-Response
+     * [{
+     *    "total_roads": "288",
+     *    "admin": "21TS"
+     *  },
+     *  {
+     *    "total_roads": "123",
+     *    "admin": "21CT"
+     *  },
+     *  {
+     *    "total_roads": "117",
+     *    "admin": "21NT"
+     *  },
+     *  ...
+     * ]
+     *
+    */ 
+    method: 'GET',
+    path: '/admin/roads/total',
+    handler: function (req, res) {
+      // extend 
+      const districtQuery = req.query.level === 'district' ? ', SUBSTRING(id, 4, 2)' : '';
+      knex.raw(`
+        SELECT COUNT(id) as total_roads, CONCAT(SUBSTRING(id, 0, 3)${districtQuery}) as admin
+        FROM road_properties
+        GROUP BY admin;
+      `)
+      .then(adminRoadNum => res(adminRoadNum.rows));
+    }
   }
 ];

@@ -176,5 +176,55 @@ module.exports = [
       .then(roads => res(roads.map(road => road.road_id)));
     }
   }
+  ,
+  {
+    /**
+     * @api {get} /field/roads/total
+     * @apiGroup Field
+     * @apiName List road count by vpromms admin identifier
+     * @apiDescription Returns list of road count by vpromms admin identifier
+     * @apiVersion 0.1.0
+     *
+     * @apiParam {string} level admin level
+     *
+     * @apiSuccess {array} array of objects with vpromms and field road count
+     *
+     * @apiSuccessExample {JSON} Example Usage:
+     *  curl http://localhost:4000/field/roads/total?level=district
+     *
+     * @apiSuccessExample {JSON} Success-Response
+     * [{
+     *    "total_roads": "137",
+     *    "admin": "21YD"
+     *  },
+     *  {
+     *    "total_roads": "28",
+     *    "admin": "21TH"
+     *  },
+     *  {
+     *    "total_roads": "127",
+     *    "admin": "21TT"
+     *  },
+     *  {
+     *    "total_roads": "39",
+     *    "admin": "02BX"
+     *  },
+     *  ...
+     * ]
+     *
+    */
+    method: 'GET',
+    path: '/field/roads/total',
+    handler: function (req, res) {
+      const districtQuery = req.query.level === 'district' ? ', SUBSTRING(road_id, 4, 2)' : '';
+      knex.raw(`
+        SELECT DISTINCT COUNT(id) as total_roads, CONCAT(SUBSTRING(road_id, 0, 3)${districtQuery}) as admin
+        FROM field_data_geometries
+        WHERE (CONCAT(SUBSTRING(road_id, 0, 3)${districtQuery}) <> '')
+        GROUP BY admin;
+      `)
+      .then(adminRoadNum => res(adminRoadNum.rows));
+    }
+  }
 ];
 
