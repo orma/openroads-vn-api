@@ -258,7 +258,7 @@ module.exports = [
       const adminQuery = adminId.length ? `AND CONCAT(SUBSTRING(road_id, 0, 3)${districtQuery}) = '${adminId}'` : ''
       console.log(adminQuery);
       knex.raw(`
-        SELECT DISTINCT COUNT(road_id) as total_roads, CONCAT(SUBSTRING(road_id, 0, 3)${districtQuery}) as admin
+        SELECT COUNT(DISTINCT road_id) as total_roads, CONCAT(SUBSTRING(road_id, 0, 3)${districtQuery}) as admin
         FROM field_data_geometries
         WHERE (CONCAT(SUBSTRING(road_id, 0, 3)${districtQuery}) <> '')
         ${adminQuery}
