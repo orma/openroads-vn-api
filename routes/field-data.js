@@ -175,8 +175,7 @@ module.exports = [
       .whereNotNull('road_id')
       .then(roads => res(roads.map(road => road.road_id)));
     }
-  }
-  ,
+  },
   {
     /**
      * @api {get} /field/roads/total
