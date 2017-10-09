@@ -336,14 +336,18 @@ module.exports = [
     method: 'GET',
     path: '/admin/roads/total',
     handler: function (req, res) {
-      // extend 
+      // the query does a regex match against the first 2 (if province) or first 2 and 4th & 5th 
+      // characters in vpromms ids 
       const districtQuery = req.query.level === 'district' ? ', SUBSTRING(id, 4, 2)' : '';
+      const adminId=req.query.adminId.toString();
+      const adminQuery = adminId ? `WHERE CONCAT(SUBSTRING(id, 0, 3)${districtQuery}) = '${adminId}'` : ''
       knex.raw(`
         SELECT COUNT(id) as total_roads, CONCAT(SUBSTRING(id, 0, 3)${districtQuery}) as admin
-        FROM road_properties
+        FROM road_properties 
+        ${adminQuery}
         GROUP BY admin;
       `)
       .then(adminRoadNum => res(adminRoadNum.rows));
     }
-  }
+  },
 ];

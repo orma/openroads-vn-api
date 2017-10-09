@@ -217,10 +217,13 @@ module.exports = [
     path: '/field/roads/total',
     handler: function (req, res) {
       const districtQuery = req.query.level === 'district' ? ', SUBSTRING(road_id, 4, 2)' : '';
+      const adminId = req.query.adminId.toString();
+      const adminQuery = adminId ? `AND CONCAT(SUBSTRING(road_id, 0, 3)${districtQuery}) = '${adminId}'` : ''
       knex.raw(`
-        SELECT DISTINCT COUNT(id) as total_roads, CONCAT(SUBSTRING(road_id, 0, 3)${districtQuery}) as admin
+        SELECT DISTINCT COUNT(road_id) as total_roads, CONCAT(SUBSTRING(road_id, 0, 3)${districtQuery}) as admin
         FROM field_data_geometries
         WHERE (CONCAT(SUBSTRING(road_id, 0, 3)${districtQuery}) <> '')
+        ${adminQuery}
         GROUP BY admin;
       `)
       .then(adminRoadNum => res(adminRoadNum.rows));
