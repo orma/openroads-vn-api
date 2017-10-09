@@ -181,8 +181,8 @@ module.exports = [
     /**
      * @api {get} /field/roads/total
      * @apiGroup Field
-     * @apiName List road count by vpromms admin identifier
-     * @apiDescription Returns list of road count by vpromms admin identifier
+     * @apiName List Field Data road counts at province and district level
+     * @apiDescription Returns list of field data road counts for a specific admin level
      * @apiVersion 0.1.0
      *
      * @apiParam {string} level admin level
@@ -230,8 +230,8 @@ module.exports = [
     /**
      * @api {get} /field/roads/total/{id}
      * @apiGroup Field
-     * @apiName List field data road count for admins that match a given admin identifier
-     * @apiDescription Returns list of road count by vpromms admin identifier for ids matching id parameter
+     * @apiName List Specific Admin Unit's Field Data Count
+     * @apiDescription Returns list of field data road counts for a specific admin unit
      * @apiVersion 0.1.0
      *
      * @apiParam {string} id admin id

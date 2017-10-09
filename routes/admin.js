@@ -304,9 +304,10 @@ module.exports = [
   },
   {
     /**
-     * @api {get} /admin/roads
-     * @apiName List road count per vpromms admin code 
-     * @apiDescription Returns list of objects with vpromm admin code and their # of roads
+     * @api {get} /admin/roads/total
+     * @apiGroup Admin
+     * @apiName List Admin Road Count
+     * @apiDescription Returns list of admin road counts at province and district level
      * @apiVersion 0.1.0
      *
      * @apiParam {string} level the admin level being queried
@@ -351,8 +352,8 @@ module.exports = [
      /**
      * @api {get} /admin/roads/total/{id}
      * @apiGroup Admin
-     * @apiName List road count for admins that match a given admin identifier
-     * @apiDescription Returns list of road count by vpromms admin identifier for ids matching id parameter
+     * @apiName List Specific Admin Road Count
+     * @apiDescription Returns list of admin road counts for a specific admin unit
      * @apiVersion 0.1.0
      *
      * @apiParam {string} id admin id
