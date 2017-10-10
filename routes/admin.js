@@ -379,7 +379,6 @@ module.exports = [
       const districtQuery = req.query.level === 'district' ? ', SUBSTRING(id, 4, 2)' : '';
       const adminId = req.params.id.toString();
       const adminQuery = adminId.length ? `WHERE CONCAT(SUBSTRING(id, 0, 3)${districtQuery}) = '${adminId}'` : ''
-      console.log(adminQuery);
       knex.raw(`
         SELECT COUNT(id) as total_roads, CONCAT(SUBSTRING(id, 0, 3)${districtQuery}) as admin
         FROM road_properties
