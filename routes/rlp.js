@@ -10,7 +10,6 @@ const { parseGeometries } = require('../services/rlp-geometries');
 const { parseProperties } = require('../services/rlp-properties');
 const uploadChangeset = require('./osc-upload').handler;
 const {
-  getPossibleRoadIdFromPath,
   NO_ID,
   ONLY_PROPERTIES
 } = require('../util/road-id-utils');
@@ -26,14 +25,14 @@ async function geometriesHandler (req, res) {
   const existingRoadIds = await knex.select('id').from('road_properties').map(r => r.id);
 
   let fileReads = [];
-  let idsNewToDB = [];
+  let badPaths = [];
   req.payload[Object.keys(req.payload)[0]]
     .pipe(unzip.Parse())
     .on('entry', async e => {
       if (e.type === 'File' && filenamePattern.test(e.path)) {
         const read = await parseGeometries(e.path, e, existingRoadIds);
         if (!read.road_id) {
-          idsNewToDB = idsNewToDB.concat(getPossibleRoadIdFromPath(e.path));
+          badPaths = badPaths.concat(e.path);
         }
         fileReads = fileReads.concat(read);
       } else {
@@ -44,10 +43,8 @@ async function geometriesHandler (req, res) {
     .on('close', async () => {
       // Prevent ingest of bad data
       const fieldDataRoadIds = [...new Set(fileReads.map(r => r.road_id))];
-      if (fieldDataRoadIds.includes(null)) { return res(errors.nullRoadIds); }
       if (fieldDataRoadIds.includes(ONLY_PROPERTIES)) { return res(errors.cannotUseOnlyProperties); }
-
-      if (idsNewToDB.length) { return res(errors.unknownRoadIds(idsNewToDB)); }
+      if (badPaths.length) { return res(errors.badPaths(badPaths)); }
 
       // Ignore any duplicate input road geometries
       fileReads = fileReads.reduce((all, fr) => {
@@ -112,14 +109,14 @@ async function propertiesHandler (req, res) {
   const existingRoadIds = await knex.select('id').from('road_properties').map(r => r.id);
 
   let rows = [];
-  let idsNewToDB = [];
+  let badPaths = [];
   req.payload[Object.keys(req.payload)[0]]
     .pipe(unzip.Parse())
     .on('entry', async e => {
       if (e.type === 'File' && filenamePattern.test(e.path)) {
         const read = await parseProperties(e.path, e, existingRoadIds);
         if (!read[0].road_id) {
-          idsNewToDB = idsNewToDB.concat(getPossibleRoadIdFromPath(e.path));
+          badPaths = badPaths.concat(e.path);
         }
         rows = rows.concat(read);
       } else {
@@ -130,9 +127,7 @@ async function propertiesHandler (req, res) {
     .on('close', async () => {
       // Prevent ingest of bad data
       const fieldDataRoadIds = [...new Set(rows.map(r => r.road_id))];
-      if (fieldDataRoadIds.includes(null)) { return res(errors.nullRoadIds); }
-
-      if (idsNewToDB.length) { return res(errors.unknownRoadIds(idsNewToDB)); }
+      if (badPaths.length) { return res(errors.badPaths(badPaths)); }
 
       // Strip the `NO_ID` and `ONLY_PROPERTIES` so that they
       // don't appear in the database
@@ -188,9 +183,11 @@ module.exports = [
    *
    * Uploaded ZIP should not include ZIPs within. Furthermore, it is
    * expected that the road ID will be within the parent, grandparent,
-   * or great-granparent's directory name. For compatibility reasons,
-   * the ZIP must be uploaded in multi-part form data, not with a standard
-   * file POST; see the example below.
+   * or great-granparent's directory name. If a road truly has no ID,
+   * then assign an ID of `NO_ID`.
+   *
+   * For compatibility reasons, the ZIP must be uploaded in multi-part
+   * form data, not with a standard file POST; see the example below.
    *
    * @apiParam {Object} geometries ZIP of RoadLabPro field data
    *
@@ -251,10 +248,14 @@ module.exports = [
    *
    * Uploaded ZIP should not include ZIPs within. Furthermore, it is
    * expected that the road ID will be within the parent, grandparent,
-   * or great-granparent's directory name. For compatibility reasons,
-   * the ZIP must be uploaded in multi-part form data, not with a standard
-   * file POST; see the example below. All properties will be ingested
-   * as string data, regardless of whether they're boolean, numeric, or string.
+   * or great-granparent's directory name. If a road truly has no ID,
+   * then assign an ID of `NO_ID`. If this is a run to collect IRI for
+   * many roads at a time, then assign an ID of `ONLY_PROPERTIES`.
+   *
+   * For compatibility reasons, the ZIP must be uploaded in multi-part
+   * form data, not with a standard file POST; see the example below.
+   * All properties will be ingested as string data, regardless of
+   * whether they're boolean, numeric, or string.
    *
    * @apiExample {curl} Example Usage:
    *  curl --form file=@rlp.zip http://localhost:4000/fielddata/properties/rlp

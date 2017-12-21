@@ -1,6 +1,16 @@
 'use strict';
 const Boom = require('boom');
+const {
+  applyPatch,
+  validate
+} = require('fast-json-patch');
 const knex = require('../connection.js');
+const {
+  groupBy,
+  some,
+  get,
+  map
+} = require('lodash');
 
 
 const validateId = (id) => /^\d{3}([A-ZĐ]{2}|00)\d{5}$/.test(id);
@@ -26,8 +36,9 @@ function getHandler (req, res) {
   }
 
 
-  knex('road_properties')
-    .select('road_properties.id AS id', 'road_properties.properties AS properties', 'osm_tag.v AS hasOSMData')
+  knex('road_properties as roads')
+    .select('roads.id', 'roads.properties', 'ways.visible AS hasOSMData')
+    .distinct('roads.id')
     .modify(function(queryBuilder) {
       if (province && district) {
         queryBuilder.whereRaw(`id LIKE '${province}_${district}%'`);
@@ -35,14 +46,15 @@ function getHandler (req, res) {
         queryBuilder.whereRaw(`id LIKE '${province}%'`);
       }
     })
-    .leftJoin(knex.raw(`(SELECT DISTINCT v FROM current_way_tags WHERE k = 'or_vpromms') as osm_tag`), 'road_properties.id', 'osm_tag.v')
+    .leftJoin(knex.raw(`(SELECT way_id, v FROM current_way_tags WHERE k = 'or_vpromms') AS tags`), 'roads.id', 'tags.v')
+    .leftJoin(knex.raw(`(SELECT id AS way_id, visible FROM current_ways WHERE visible = true) AS ways`), 'tags.way_id', 'ways.way_id')
     .orderBy(sortField, sortOrder)
     .limit(PAGE_SIZE)
     .offset((page - 1) * PAGE_SIZE)
   .then(function(response) {
     return res(
-      response.map((road) => ({
-        ...road, hasOSMData: !!road.hasOSMData
+      response.map(({ id, properties, hasOSMData }) => ({
+        id, properties, hasOSMData: !!hasOSMData
       }))
     ).type('application/json');
   })
@@ -54,20 +66,21 @@ function getHandler (req, res) {
 
 
 function getByIdHandler (req, res) {
-  knex('road_properties')
-    .select('road_properties.id', 'road_properties.properties', 'osm_tag.v as hasOSMData')
+  knex('road_properties AS roads')
+    .select('roads.id', 'roads.properties', 'tags.v', 'ways.visible')
+    .distinct('roads.id')
+    .leftJoin(knex.raw(`(SELECT way_id, v FROM current_way_tags WHERE k = 'or_vpromms') AS tags`), 'roads.id', 'tags.v')
+    .leftJoin(knex.raw(`(SELECT id AS way_id, visible FROM current_ways WHERE visible = true) AS ways`), 'tags.way_id', 'ways.way_id')
     .where({ id: req.params.road_id })
-    .leftJoin(knex.raw(`(SELECT DISTINCT v FROM current_way_tags WHERE k = 'or_vpromms') as osm_tag`), 'road_properties.id', 'osm_tag.v')
-  .then(function([response]) {
-    if (response === undefined) {
+  .then(function([row]) {
+    if (row === undefined) {
       return res(Boom.notFound());
     }
 
-
     return res({
-      id: response.id,
-      properties: response.properties,
-      hasOSMData: !!response.hasOSMData
+      id: row.id,
+      properties: row.properties,
+      hasOSMData: !!row.visible
     }).type('application/json');
   })
   .catch(function(err) {
@@ -77,29 +90,81 @@ function getByIdHandler (req, res) {
 }
 
 
+function getByIdGeoJSONHandler (req, res) {
+  const id = req.params.road_id;
+
+  knex.raw(`
+    SELECT
+        cw.id AS way_id,
+        ST_ASTEXT(ST_MAKEPOINT(
+            cn.longitude::FLOAT / 10000000,
+            cn.latitude::FLOAT / 10000000
+        )) AS point
+    FROM current_way_tags AS cwt
+    LEFT JOIN current_ways AS cw
+        ON cwt.way_id = cw.id
+    LEFT JOIN current_way_nodes AS cwn
+        ON cw.id = cwn.way_id
+    LEFT JOIN current_nodes AS cn
+        ON cwn.node_id = cn.id
+    WHERE cwt.k = 'or_vpromms' AND
+        cw.visible AND
+        cwt.v = '${id}'
+    ORDER BY cw.id,
+        cwn.sequence_id
+  `)
+    .then(function({ rows }) {
+      const features = map(
+        groupBy(rows, row => get(row, 'way_id')),
+        wayPoints => ({
+          type: 'Feature',
+          properties: { id },
+          geometry: {
+            type: 'LineString',
+            coordinates: map(wayPoints, ({ point }) => ([
+              parseFloat(/[0-9\.]+/.exec(point)[0]),
+              parseFloat(/ [0-9\.]+/.exec(point)[0])
+            ]))
+          }
+        })
+      );
+
+      return res({
+        type: 'FeatureCollection',
+        features
+      }).type('application/json');
+    })
+    .catch(function(err) {
+      console.error('Error GET /field/geometries/{id}', err);
+      return res(Boom.badImplementation());
+    });
+};
+
+
 function getCountHandler (req, res) {
   const province = req.query.province;
-  const district = req.query.district;
+  const district = req.query.district || '';
 
-  knex('road_properties')
-    .select(knex.raw(`
-      SUM((road_properties.id IS NOT NULL)::int) AS totalcount,
-      SUM((osm_tag.v IS NOT NULL)::int) AS osmcount
-    `))
+
+  knex('road_properties as roads')
+    .select('roads.id', 'ways.visible AS hasOSMData')
+    .distinct('roads.id')
+    .leftJoin(knex.raw(`(SELECT way_id, v FROM current_way_tags WHERE k = 'or_vpromms') AS tags`), 'roads.id', 'tags.v')
+    .leftJoin(knex.raw(`(SELECT id AS way_id, visible FROM current_ways WHERE visible = true) AS ways`), 'tags.way_id', 'ways.way_id')
     .modify(function(queryBuilder) {
       if (province && district) {
         queryBuilder.whereRaw(`id LIKE '${province}_${district}%'`);
       } else if (province) {
         queryBuilder.whereRaw(`id LIKE '${province}%'`);
       }
+
+      queryBuilder.distinct('id');
     })
-    .leftJoin(knex.raw(`(SELECT DISTINCT v FROM current_way_tags WHERE k = 'or_vpromms') AS osm_tag`), 'road_properties.id', 'osm_tag.v')
-  .then(function([{ totalcount, osmcount }]) {
-    const totalCountInt = parseInt(totalcount);
+  .then(function(rows) {
     res({
-      count: totalCountInt,
-      osmCount: parseInt(osmcount),
-      pageCount: Math.ceil(totalCountInt / PAGE_SIZE),
+      count: rows.length,
+      osmCount: rows.filter(({ hasOSMData }) => hasOSMData).length,
+      pageCount: Math.ceil(rows.length / PAGE_SIZE),
       pageSize: PAGE_SIZE
     }).type('application/json');
   })
@@ -209,6 +274,37 @@ function deleteHandler(req, res) {
   });
 }
 
+
+function patchPropertyHandler(req, res) {
+  if (
+    validate(req.payload) !== undefined ||
+    some(req.payload, ({ path }) => path.match(/\//g).length > 1)
+  ) {
+    return res(Boom.badData());
+  }
+
+  return knex('road_properties')
+    .select('id', 'properties')
+    .where({ id: req.params.road_id })
+  .then(function([response]) {
+    if (response === undefined) {
+      return res(Boom.notFound());
+    }
+
+    return knex('road_properties')
+      .where({ id: req.params.road_id })
+      .update({ properties: applyPatch(response.properties, req.payload).newDocument });
+  })
+  .then(function() {
+    res();
+  })
+  .catch(function(err) {
+    console.error('Error: PUT /properties/roads/{road_id}', err);
+    return res(Boom.badImplementation());
+  });
+}
+
+
 module.exports = [
   /**
    * @api {get} /properties/roads?province=XX&district=YY&page=ZZ&sortOrder=asc Get Roads
@@ -246,9 +342,9 @@ module.exports = [
     handler: getHandler
   },
   /**
-   * @api {get} /properties/roads/:id Get Road by ID
+   * @api {get} /properties/roads/:id Get Road
    * @apiGroup Properties
-   * @apiName Get Road by ID
+   * @apiName Get Road
    * @apiVersion 0.3.0
    *
    * @apiSuccessExample {JSON} Success-Response
@@ -265,6 +361,35 @@ module.exports = [
     method: 'GET',
     path: '/properties/roads/{road_id}',
     handler: getByIdHandler
+  },
+  /**
+   * @api {get} /properties/roads/:id.geojson Get Road GeoJSON
+   * @apiGroup Properties
+   * @apiName Get Road As GeoJSON
+   * @apiVersion 0.3.0
+   *
+   * @apiSuccessExample {JSON} Success-Response
+   * {
+   *     "type": "FeatureCollection",
+   *     "features": [
+   *         {
+   *             "type": "Feature",
+   *             "properties": { "id": "212TH00030" },
+   *             "geometry": {
+   *                 "type": "LineString",
+   *                 "coordinates": [...]
+   *             }
+   *        }
+   *     ]
+   * }
+   *
+   * @apiExample {curl} Example Usage:
+   *  curl -X GET localhost:4000/properties/roads/212TH00030.geojson
+   */
+  {
+    method: 'GET',
+    path: '/properties/roads/{road_id}.geojson',
+    handler: getByIdGeoJSONHandler
   },
   /**
    * @api {get} /properties/roads/count?province=XX&district=YY Get Road Counts
@@ -316,6 +441,30 @@ module.exports = [
     method: 'PUT',
     path: '/properties/roads/{road_id}',
     handler: createHandler
+  },
+  /**
+   * @api {PATCH} /properties/roads/:id Patch road properties
+   * @apiGroup Properties
+   * @apiName Patch road properties
+   * @apiVersion 0.3.0
+   *
+   * @apiParam {String} id road id
+   * @apiParam {String} json-patch patch operations to apply to road properties.  See https://tools.ietf.org/html/rfc6902 for spec details.
+   *
+   * @apiErrorExample {json} Error-Response
+   *     Patch operations are invalid
+   *     HTTP/1.1 422 Unprocessable Entity
+   *     {
+   *       error: "Unprocessable Entity"
+   *     }
+   *
+   * @apiExample {curl} Example Usage:
+   *  curl -X PATCH- H "Content-Type: application/json-patch+json" -d '[{"op": "replace", path: "/Risk Score", value: "2"}]' http://localhost:4000/properties/roads/123
+   */
+  {
+    method: 'PATCH',
+    path: '/properties/roads/{road_id}',
+    handler: patchPropertyHandler
   },
   /**
    * @api {POST} /properties/roads/:id/move Rename road id

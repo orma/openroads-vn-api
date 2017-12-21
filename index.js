@@ -52,6 +52,17 @@ server.ext('onPostAuth', function(req, res) {
   return res.continue();
 });
 
+server.ext('onPreResponse', function (request, reply) {
+  // Add the `data` from a Boom object to the response
+  if (!request.response.isBoom) {
+    return reply.continue();
+  }
+  if (request.response.data) {
+    request.response.output.payload.data = request.response.data;
+  }
+  return reply(request.response);
+});
+
 server.start(function () {
   console.log('Server running at:', server.info.uri);
 });
