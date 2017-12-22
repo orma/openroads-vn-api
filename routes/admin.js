@@ -259,46 +259,39 @@ module.exports = [
     /**
      * @api {get} /admin/roads/total
      * @apiGroup Admin
-     * @apiName List Admin Road Count
-     * @apiDescription Returns list of admin road counts at province and district level
-     * @apiVersion 0.1.0
+     * @apiName Province Road Count
+     * @apiDescription list road count for all provinces
+     * @apiVersion 0.3.0
      *
-     * @apiParam {string} level the admin level being queried
-     *
-     * @apiSuccess {array} array of objects with vpromms identifier and road count
-     *
-     * @apiSuccessExample {JSON} Example Usage:
-     *  curl http://localhost:4000/admin/roads?level=district
-     *
-     * @apiSuccessExample {JSON} Success-Response
-     * [{
-     *    "total_roads": "288",
-     *    "admin": "21TS"
-     *  },
-     *  {
-     *    "total_roads": "123",
-     *    "admin": "21CT"
-     *  },
-     *  {
-     *    "total_roads": "117",
-     *    "admin": "21NT"
-     *  },
-     *  ...
-     * ]
-     *
-    */
+     * @apiExample {curl} Example Usage:
+     *  curl -X GET http://localhost:4000/admin/roads/total
+     */
     method: 'GET',
     path: '/admin/roads/total',
     handler: function (req, res) {
-      // the query does a regex match against the first 2 (if province) or first 2 and 4th & 5th
-      // characters in vpromms ids
-      const districtQuery = req.query.level === 'district' ? ', SUBSTRING(id, 4, 2)' : '';
       knex.raw(`
-        SELECT COUNT(id) as total_roads, CONCAT(SUBSTRING(id, 0, 3)${districtQuery}) as admin
-        FROM road_properties
-        GROUP BY admin;
+        SELECT SUBSTRING(roads.id, 0, 3) AS province_id,
+            COUNT(DISTINCT roads.id) AS count,
+            COUNT(DISTINCT CASE WHEN ways.visible THEN roads.id ELSE NULL END) AS osmcount
+        FROM road_properties AS roads
+        LEFT JOIN current_way_tags AS tags
+            ON roads.id = tags.v AND
+            tags.k = 'or_vpromms'
+        LEFT JOIN current_ways AS ways
+            ON tags.way_id = ways.id
+        GROUP BY province_id;
       `)
-      .then(adminRoadNum => res(adminRoadNum.rows));
+      .then(function({ rows }) {
+        return res(rows.map(({ province_id, count, osmcount}) => ({
+          id: province_id,
+          count: parseInt(count),
+          osmCount: parseInt(osmcount)
+        }))).type('application/json');
+      })
+      .catch(function(err) {
+        console.error('Error GET /admin/roads/total', err);
+        return res(Boom.badImplementation(err));
+      });
     }
   }
 ];
