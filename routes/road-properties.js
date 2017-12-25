@@ -163,9 +163,7 @@ function getCountHandler (req, res) {
   .then(function(rows) {
     res({
       count: rows.length,
-      osmCount: rows.filter(({ hasOSMData }) => hasOSMData).length,
-      pageCount: Math.ceil(rows.length / PAGE_SIZE),
-      pageSize: PAGE_SIZE
+      osmCount: rows.filter(({ hasOSMData }) => hasOSMData).length
     }).type('application/json');
   })
   .catch(function(err) {
