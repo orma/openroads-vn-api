@@ -282,11 +282,14 @@ module.exports = [
         GROUP BY province_id;
       `)
       .then(function({ rows }) {
-        return res(rows.map(({ province_id, count, osmcount}) => ({
-          id: province_id,
-          count: parseInt(count),
-          osmCount: parseInt(osmcount)
-        }))).type('application/json');
+        return res(rows.reduce((provinces, { province_id, count, osmcount}) => {
+          provinces[province_id] = {
+            count: parseInt(count),
+            osmCount: parseInt(osmcount)
+          };
+
+          return provinces;
+        }, {})).type('application/json');
       })
       .catch(function(err) {
         console.error('Error GET /admin/roads/total', err);
