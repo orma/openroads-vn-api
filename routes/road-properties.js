@@ -9,7 +9,9 @@ const {
   groupBy,
   some,
   get,
-  map
+  map,
+  reject,
+  each
 } = require('lodash');
 
 
@@ -46,15 +48,24 @@ function getHandler (req, res) {
         queryBuilder.whereRaw(`id LIKE '${province}%'`);
       }
     })
-    .where('ways.visible', true)
     .leftJoin(knex.raw(`(SELECT way_id, v FROM current_way_tags WHERE k = 'or_vpromms') AS tags`), 'roads.id', 'tags.v')
     .leftJoin(knex.raw(`(SELECT id AS way_id, visible FROM current_ways WHERE visible = true) AS ways`), 'tags.way_id', 'ways.way_id')
     .orderBy(sortField, sortOrder)
     .limit(PAGE_SIZE)
     .offset((page - 1) * PAGE_SIZE)
   .then(function(response) {
+    const groups = groupBy(response, response => get(response, 'id'));
+    let results = [];
+
+    // for roads with more than 2 ways, return only the ones that are visible.
+    each(groups, (group) => {
+      if (group.length > 1) {
+        group = reject(group, (g) => !g.hasOSMData);
+      }
+      Array.prototype.push.apply(results, group);
+    });
     return res(
-      response.map(({ id, properties, hasOSMData }) => ({
+      results.map(({ id, properties, hasOSMData }) => ({
         id, properties, hasOSMData: !!hasOSMData
       }))
     ).type('application/json');
