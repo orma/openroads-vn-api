@@ -1,6 +1,9 @@
 'use strict';
 var Boom = require('boom');
 
+const {
+  validate
+} = require('fast-json-patch');
 var knex = require('../connection');
 var queryWays = require('../services/query-ways');
 var XML = require('../services/xml');
@@ -68,6 +71,44 @@ function singleWayBBOX(req, res) {
   .catch(function (err) {
     log.error(err);
     return res(Boom.wrap(err));
+  });
+}
+
+function patchVprommIdHandler(req, res) {
+  var wayId = parseInt(req.params.wayId || '', 10);
+  if (
+    !validate(req.payload) ||
+    !(req.payload.hasOwnProperty('vprommid'))
+  ) {
+    return res(Boom.badData());
+  }
+  return knex('current_way_tags')
+    .where({
+      way_id: wayId,
+      k: 'or_vpromms'
+    })
+    .update({
+      v: req.payload.vprommid
+    })
+  .then(function(response) {
+    console.log(response);
+    if (response === 0) {
+      throw new Error('404');
+      return response;
+    }
+    return res({ wayId: wayId }).type('application/json');
+  })
+  .catch(function(err) {
+    if (err.constraint) {
+      return res(Boom.conflict());
+    }
+
+    if (err.message === '404') {
+      return res(Boom.notFound());
+    }
+
+    console.error('Error PATCH /way/tags/vprommid/{wayId}', err);
+    return res(Boom.badImplementation());
   });
 }
 
@@ -145,5 +186,29 @@ module.exports = [
     method: 'GET',
     path: '/way/{VProMMs_Id}/bbox',
     handler: singleWayBBOX
+  },
+/**
+   * @api {PATCH} /way/tags/vprommid/:way_id Patch current_way_tags with new VPRoMM ID
+   * @apiGroup Properties
+   * @apiName Patch current_way_tags with new VPRoMM ID
+   * @apiVersion 0.3.0
+   *
+   * @apiParam {String} id way id
+   * @apiParam {String} json-patch patch operations to apply new VPRoMM ID.  See https://tools.ietf.org/html/rfc6902 for spec details.
+   *
+   * @apiErrorExample {json} Error-Response
+   *     Patch operations are invalid
+   *     HTTP/1.1 422 Unprocessable Entity
+   *     {
+   *       error: "Unprocessable Entity"
+   *     }
+   *
+   * @apiExample {curl} Example Usage:
+   *  curl -X PATCH- H "Content-Type: application/json-patch+json" -d '214TT00039' http://localhost:4000/way/tags/vprommid/123
+   */
+  {
+    method: 'PATCH',
+    path: '/way/tags/vprommid/{wayId}',
+    handler: patchVprommIdHandler
   }
 ];
